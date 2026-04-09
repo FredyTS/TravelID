@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
+import { marketingPackages } from "@/lib/constants/mock-data";
 
 const quoteRequestSchema = z.object({
   firstName: z.string().min(2),
@@ -17,6 +18,9 @@ const quoteRequestSchema = z.object({
 export async function POST(request: Request) {
   const json = await request.json();
   const data = quoteRequestSchema.parse(json);
+  const matchedPackage = data.packageSlug
+    ? marketingPackages.find((item) => item.slug === data.packageSlug)
+    : null;
 
   try {
     const lead = await prisma.lead.create({
@@ -34,11 +38,14 @@ export async function POST(request: Request) {
         leadId: lead.id,
         type: "QUOTE_REQUEST",
         channel: "website",
+        packageId: undefined,
         originCity: data.originCity,
         tentativeDate: data.tentativeDate ? new Date(data.tentativeDate) : undefined,
         adults: data.adults,
         minors: data.minors,
-        notes: data.notes,
+        notes: matchedPackage
+          ? `${data.notes ?? ""}\nPaquete base: ${matchedPackage.name}`.trim()
+          : data.notes,
       },
     });
 

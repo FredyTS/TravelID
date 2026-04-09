@@ -11,12 +11,12 @@ const pillars = [
   {
     icon: MapPinned,
     title: "Paquetes listos para reservar",
-    description: "Escapadas a playa, viajes familiares y propuestas especiales con informacion clara y visual.",
+    description: "Cuando el paquete coincide con los viajeros incluidos, puedes apartarlo sin pasar por cotizacion.",
   },
   {
     icon: HeartHandshake,
     title: "Cotizacion personalizada",
-    description: "Si no ves el viaje ideal, armamos una propuesta a medida con seguimiento puntual.",
+    description: "Si cambian fechas, origen o numero de viajeros, preparamos una propuesta a medida.",
   },
   {
     icon: CreditCard,
@@ -51,7 +51,7 @@ export default async function HomePage() {
                 Descubre playas, escapadas y experiencias memorables con Alondra Travel MX.
               </h1>
               <p className="max-w-2xl text-lg text-slate-600 md:text-xl">
-                Encuentra tu proximo paquete vacacional, solicita una cotizacion personalizada y mantén el control de tu viaje desde la reserva hasta la salida.
+                Encuentra tu proximo paquete vacacional, reserva de inmediato cuando el paquete encaje contigo o solicita una cotizacion personalizada si necesitas ajustar condiciones.
               </p>
             </div>
             <div className="flex flex-wrap gap-3 pt-2">
@@ -95,10 +95,13 @@ export default async function HomePage() {
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/15 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-7 text-white">
                   <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
-                    Destino destacado
+                    Reserva directa disponible
                   </p>
                   <h2 className="mt-3 text-3xl text-white">{heroPackage.name}</h2>
                   <p className="mt-2 max-w-lg text-sm text-white/85">{heroPackage.summary}</p>
+                  <p className="mt-3 text-sm font-medium text-white/90">
+                    Precio para {heroPackage.includedTravelers}
+                  </p>
                 </div>
               </div>
             ) : null}
@@ -125,7 +128,7 @@ export default async function HomePage() {
         <SectionHeading
           eyebrow="Escapadas destacadas"
           title="Paquetes destacados"
-          description="Una seleccion visual para inspirar la decision de compra desde la primera visita."
+          description="Cada paquete indica para cuántos adultos y menores aplica el precio mostrado y si puedes reservarlo tal cual."
         />
         <div className="grid gap-6 lg:grid-cols-3">
           {featuredPackages.map((travelPackage) => (
@@ -140,6 +143,7 @@ export default async function HomePage() {
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">{travelPackage.destination}</Badge>
                   <Badge variant="secondary">{travelPackage.travelType}</Badge>
+                  <Badge variant="secondary">{travelPackage.includedTravelers}</Badge>
                 </div>
                 <CardTitle>{travelPackage.name}</CardTitle>
                 <p className="text-sm text-slate-600">{travelPackage.summary}</p>
@@ -154,9 +158,17 @@ export default async function HomePage() {
                   </div>
                   <Badge>{travelPackage.duration}</Badge>
                 </div>
-                <Button asChild className="w-full">
-                  <Link href={`/paquetes/${travelPackage.slug}`}>Ver detalle</Link>
-                </Button>
+                <p className="text-sm text-slate-500">{travelPackage.reservationNote}</p>
+                <div className="grid gap-3">
+                  <Button asChild className="w-full">
+                    <Link href={`/paquetes/${travelPackage.slug}`}>Ver detalle</Link>
+                  </Button>
+                  {travelPackage.directBookable ? (
+                    <Button asChild variant="outline" className="w-full">
+                      <Link href={`/reservar?package=${travelPackage.slug}`}>Reservar tal cual</Link>
+                    </Button>
+                  ) : null}
+                </div>
               </CardContent>
             </Card>
           ))}
@@ -196,23 +208,23 @@ export default async function HomePage() {
         <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
           <SectionHeading
             eyebrow="Atencion personalizada"
-            title="¿No encuentras el paquete ideal?"
-            description="Tambien armamos viajes a medida segun fechas, ciudad de salida, presupuesto y tipo de experiencia."
+            title="¿El paquete no encaja exactamente contigo?"
+            description="Si cambian viajeros, edades, fechas, ciudad de salida o servicios incluidos, armamos una cotizacion personalizada."
           />
           <div className="surface p-8">
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-3xl bg-slate-50 p-5">
-                <p className="text-sm font-medium text-slate-500">Paso 1</p>
-                <h3 className="mt-2 text-xl">Comparte tu idea</h3>
+                <p className="text-sm font-medium text-slate-500">Reserva directa</p>
+                <h3 className="mt-2 text-xl">Cuando te funciona tal cual</h3>
                 <p className="mt-2 text-sm text-slate-600">
-                  Cuentanos destino, fechas tentativas y numero de viajeros.
+                  Si el paquete y el numero de viajeros coinciden con lo publicado, puedes reservar de inmediato.
                 </p>
               </div>
               <div className="rounded-3xl bg-slate-50 p-5">
-                <p className="text-sm font-medium text-slate-500">Paso 2</p>
-                <h3 className="mt-2 text-xl">Recibe tu propuesta</h3>
+                <p className="text-sm font-medium text-slate-500">Cotizacion</p>
+                <h3 className="mt-2 text-xl">Cuando necesitas cambios</h3>
                 <p className="mt-2 text-sm text-slate-600">
-                  Preparamos una cotizacion clara con opciones de pago y seguimiento.
+                  Ajustamos fechas, ocupacion, origen, hotel o extras para proponerte una opcion personalizada.
                 </p>
               </div>
             </div>

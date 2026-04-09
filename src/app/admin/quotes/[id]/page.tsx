@@ -1,7 +1,13 @@
-import { quoteLineItems } from "@/lib/constants/mock-data";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { prisma } from "@/lib/db/prisma";
+import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { ConvertQuoteButton } from "@/features/quotes/components/convert-quote-button";
+
+export const dynamic = "force-dynamic";
 
 export default async function AdminQuoteDetailPage({
   params,
@@ -9,17 +15,31 @@ export default async function AdminQuoteDetailPage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const quote = await prisma.quote.findUnique({
+    where: { id },
+    include: {
+      customer: true,
+      items: true,
+      convertedOrder: true,
+    },
+  });
+
+  if (!quote) {
+    notFound();
+  }
 
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl text-white">Cotizacion {id}</h1>
+          <h1 className="text-4xl text-white">Cotizacion {quote.quoteNumber}</h1>
           <p className="mt-2 text-slate-300">
-            Vista preparada para revisar la propuesta, ajustar importes y convertirla a pedido.
+            {quote.customer
+              ? `Cliente: ${[quote.customer.firstName, quote.customer.lastName].filter(Boolean).join(" ")}`
+              : "Cotizacion sin cliente asociado"}
           </p>
         </div>
-        <Badge className="bg-amber-300 text-slate-950 hover:bg-amber-300">SENT</Badge>
+        <Badge className="bg-amber-300 text-slate-950 hover:bg-amber-300">{quote.status}</Badge>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -39,13 +59,12 @@ export default async function AdminQuoteDetailPage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {quoteLineItems.map((item) => (
-                    <TableRow key={item[0]} className="border-white/10">
-                      {item.map((cell) => (
-                        <TableCell key={cell} className="text-slate-100">
-                          {cell}
-                        </TableCell>
-                      ))}
+                  {quote.items.map((item) => (
+                    <TableRow key={item.id} className="border-white/10">
+                      <TableCell className="text-slate-100">{item.title}</TableCell>
+                      <TableCell className="text-slate-100">{item.quantity}</TableCell>
+                      <TableCell className="text-slate-100">{formatCurrency(Number(item.unitPrice))}</TableCell>
+                      <TableCell className="text-slate-100">{formatCurrency(Number(item.lineTotal))}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -62,19 +81,21 @@ export default async function AdminQuoteDetailPage({
             <CardContent className="space-y-4 text-sm text-slate-300">
               <div className="flex items-center justify-between">
                 <span>Estado</span>
-                <span className="font-medium text-white">Enviada</span>
+                <span className="font-medium text-white">{quote.status}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Vigencia</span>
-                <span className="font-medium text-white">12 ago 2026</span>
+                <span className="font-medium text-white">
+                  {quote.validUntil ? quote.validUntil.toLocaleDateString("es-MX") : "Sin fecha"}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Total</span>
-                <span className="font-medium text-white">$9,990 MXN</span>
+                <span className="font-medium text-white">{formatCurrency(Number(quote.grandTotal))}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Anticipo</span>
-                <span className="font-medium text-white">$3,500 MXN</span>
+                <span className="font-medium text-white">{formatCurrency(Number(quote.depositRequired))}</span>
               </div>
             </CardContent>
           </Card>
@@ -84,9 +105,16 @@ export default async function AdminQuoteDetailPage({
               <CardTitle>Siguientes acciones</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-sm text-slate-300">
-              <p>Confirmar si el cliente requiere cambios de fecha o de hotel.</p>
-              <p>Enviar recordatorio de vigencia y opcion de pago.</p>
-              <p>Convertir a pedido al aprobarse y generar schedule de cobro.</p>
+              {quote.convertedOrder ? (
+                <>
+                  <p>Esta cotizacion ya fue convertida a pedido.</p>
+                  <Link href={`/admin/orders/${quote.convertedOrder.id}`} className="font-medium text-cyan-300">
+                    Abrir pedido {quote.convertedOrder.orderNumber}
+                  </Link>
+                </>
+              ) : (
+                <ConvertQuoteButton quoteId={quote.id} />
+              )}
             </CardContent>
           </Card>
         </div>

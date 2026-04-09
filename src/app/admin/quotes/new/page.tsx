@@ -1,8 +1,8 @@
 import { quoteBuilderSections, quoteLineItems } from "@/lib/constants/mock-data";
+import { AdminQuoteForm } from "@/features/quotes/components/admin-quote-form";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
@@ -30,31 +30,8 @@ export default function NewQuotePage() {
             <CardHeader>
               <CardTitle>Resumen comercial</CardTitle>
             </CardHeader>
-            <CardContent className="grid gap-4 md:grid-cols-2">
-              <div className="space-y-2">
-                <label className="text-sm text-slate-300">Titulo de la cotizacion</label>
-                <Input defaultValue="Escapada Cancun All Inclusive" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-slate-300">Cliente</label>
-                <Input placeholder="Nombre del cliente" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-slate-300">Origen del viaje</label>
-                <Input placeholder="Ciudad de salida" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-slate-300">Fecha tentativa</label>
-                <Input type="date" />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-slate-300">Adultos</label>
-                <Input type="number" defaultValue={2} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm text-slate-300">Menores</label>
-                <Input type="number" defaultValue={0} />
-              </div>
+            <CardContent>
+              <AdminQuoteForm />
             </CardContent>
           </Card>
 

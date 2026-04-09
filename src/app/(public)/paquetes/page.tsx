@@ -23,7 +23,7 @@ export default async function PackagesPage({
       <SectionHeading
         eyebrow="Catalogo"
         title="Paquetes vacacionales"
-        description="Explora destinos recomendados, compara estilos de viaje y solicita una cotizacion cuando estes listo."
+        description="Explora destinos recomendados, compara estilos de viaje y reserva de inmediato cuando el paquete aplique tal cual para tus viajeros."
       />
 
       <div className="mt-8 flex flex-wrap gap-3 text-sm text-slate-600">
@@ -55,6 +55,7 @@ export default async function PackagesPage({
             <CardContent className="space-y-4">
               <p className="text-sm text-slate-600">{travelPackage.summary}</p>
               <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary">{travelPackage.includedTravelers}</Badge>
                 {travelPackage.tags.map((tag) => (
                   <Badge key={tag} variant="secondary">
                     {tag}
@@ -67,9 +68,17 @@ export default async function PackagesPage({
                 </span>
                 <Badge>{travelPackage.travelType}</Badge>
               </div>
-              <Button asChild className="w-full">
-                <Link href={`/paquetes/${travelPackage.slug}`}>Abrir paquete</Link>
-              </Button>
+              <p className="text-sm text-slate-500">{travelPackage.reservationNote}</p>
+              <div className="grid gap-3">
+                <Button asChild className="w-full">
+                  <Link href={`/paquetes/${travelPackage.slug}`}>Abrir paquete</Link>
+                </Button>
+                {travelPackage.directBookable ? (
+                  <Button asChild variant="outline" className="w-full">
+                    <Link href={`/reservar?package=${travelPackage.slug}`}>Reservar tal cual</Link>
+                  </Button>
+                ) : null}
+              </div>
             </CardContent>
           </Card>
         ))}

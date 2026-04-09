@@ -59,11 +59,11 @@ export default async function PackageDetailPage({
           <div className="surface p-6">
             <h2 className="text-2xl">Lo mejor de este viaje</h2>
             <ul className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
-              <li>Hospedaje y propuesta con precio claro</li>
-              <li>Reserva con anticipo o pago total</li>
+              <li>Precio publicado para {travelPackage.includedTravelers}</li>
+              <li>Reserva directa si estas condiciones te funcionan</li>
+              <li>Cotizacion personalizada si cambian viajeros o fechas</li>
               <li>Seguimiento de documentos previos al viaje</li>
               <li>Actualizaciones y detalles del itinerario</li>
-              <li>Atencion personalizada antes de viajar</li>
               <li>Consulta de pagos y comprobantes</li>
             </ul>
           </div>
@@ -76,6 +76,7 @@ export default async function PackageDetailPage({
               <p className="mt-1 text-4xl font-semibold text-slate-950">
                 ${travelPackage.priceFrom.toLocaleString("es-MX")} MXN
               </p>
+              <p className="mt-2 text-sm text-slate-500">Aplicable para {travelPackage.includedTravelers}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">{travelPackage.duration}</Badge>
@@ -89,11 +90,19 @@ export default async function PackageDetailPage({
                 </Badge>
               ))}
             </div>
+            <div className="rounded-3xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-600">
+              {travelPackage.reservationNote}
+            </div>
             <div className="space-y-3">
-              <Button asChild className="w-full">
-                <Link href={`/cotizar?package=${travelPackage.slug}`}>Cotizar este paquete</Link>
-              </Button>
+              {travelPackage.directBookable ? (
+                <Button asChild className="w-full">
+                  <Link href={`/reservar?package=${travelPackage.slug}`}>Reservar este paquete</Link>
+                </Button>
+              ) : null}
               <Button asChild variant="outline" className="w-full">
+                <Link href={`/cotizar?package=${travelPackage.slug}`}>Solicitar cotizacion personalizada</Link>
+              </Button>
+              <Button asChild variant="ghost" className="w-full">
                 <Link href="/contacto">Hablar con administracion</Link>
               </Button>
             </div>

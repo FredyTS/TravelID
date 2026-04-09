@@ -14,6 +14,9 @@ export type MarketingPackage = {
   heroImage: string;
   gallery: string[];
   tags: string[];
+  includedTravelers: string;
+  directBookable: boolean;
+  reservationNote: string;
 };
 
 export type PromotionCard = {
@@ -48,6 +51,9 @@ export const marketingPackages: MarketingPackage[] = [
       "https://images.unsplash.com/photo-1493558103817-58b2924bce98?auto=format&fit=crop&w=900&q=80",
     ],
     tags: ["All inclusive", "Traslados", "Playa"],
+    includedTravelers: "2 adultos",
+    directBookable: true,
+    reservationNote: "Si viajan 2 adultos bajo estas condiciones, pueden reservar de inmediato.",
   },
   {
     id: "pkg-riviera",
@@ -71,6 +77,9 @@ export const marketingPackages: MarketingPackage[] = [
       "https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=900&q=80",
     ],
     tags: ["Familiar", "Desayuno incluido", "Asistencia"],
+    includedTravelers: "2 adultos y 2 menores",
+    directBookable: true,
+    reservationNote: "Reservable tal cual para una familia de 2 adultos y 2 menores.",
   },
   {
     id: "pkg-pdc",
@@ -93,6 +102,9 @@ export const marketingPackages: MarketingPackage[] = [
       "https://images.unsplash.com/photo-1473116763249-2faaef81ccda?auto=format&fit=crop&w=900&q=80",
     ],
     tags: ["Parejas", "Boutique", "Traslado privado"],
+    includedTravelers: "2 adultos",
+    directBookable: true,
+    reservationNote: "Ideal para pareja; si cambian viajeros o condiciones, conviene cotizacion personalizada.",
   },
 ];
 
