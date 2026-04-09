@@ -7,28 +7,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-const defaultHotelsJson = JSON.stringify(
-  [
-    {
-      name: "Hotel Cancun Resort",
-      code: "HTL-CUN-01",
-      image:
-        "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=80",
-      mealPlan: "All inclusive",
-      roomType: "Junior Suite",
-      depositDueDate: "15 mayo 2026",
-      depositAmount: "$3,500 MXN",
-      balanceDueDate: "30 junio 2026",
-      balanceAmount: "$9,490 MXN",
-      pricePerNight: "$3,247 MXN",
-      total: "$12,990 MXN",
-      legend: "Tarifa sujeta a disponibilidad al momento de confirmar.",
-      note: "Incluye hospedaje, alimentos, acceso a amenidades y asistencia previa al viaje.",
-    },
-  ],
-  null,
-  2,
-);
+type PackageOption = {
+  slug: string;
+  name: string;
+  destination: string;
+  hotelName: string;
+  supplierName: string;
+  mealPlanName: string;
+  roomTypeName: string;
+};
+
+type HotelOption = {
+  id: string;
+  name: string;
+  destination: string;
+  supplierName: string;
+  legacyHotelCode: string;
+  heroImageUrl: string;
+  mealPlans: { id: string; name: string }[];
+  roomTypes: { id: string; name: string; mealPlanId: string }[];
+};
+
+type SupplierOption = {
+  id: string;
+  code: string;
+  name: string;
+};
+
+type MealPlanOption = {
+  id: string;
+  name: string;
+};
 
 const defaultFlightsJson = JSON.stringify(
   {
@@ -75,14 +84,43 @@ const defaultTransferJson = JSON.stringify(
   2,
 );
 
+function findMealPlanName(mealPlanOptions: MealPlanOption[], mealPlanId: string) {
+  return mealPlanOptions.find((mealPlan) => mealPlan.id === mealPlanId)?.name ?? "";
+}
+
+function findSupplierName(supplierOptions: SupplierOption[], supplierId: string) {
+  return supplierOptions.find((supplier) => supplier.id === supplierId)?.name ?? "";
+}
+
 export function AdminQuoteForm({
   packageOptions,
+  hotelOptions,
+  supplierOptions,
+  mealPlanOptions,
 }: {
-  packageOptions: { slug: string; name: string; destination: string }[];
+  packageOptions: PackageOption[];
+  hotelOptions: HotelOption[];
+  supplierOptions: SupplierOption[];
+  mealPlanOptions: MealPlanOption[];
 }) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [selectedHotelId, setSelectedHotelId] = useState(hotelOptions[0]?.id ?? "");
+  const [selectedMealPlanId, setSelectedMealPlanId] = useState("");
+  const [selectedRoomTypeId, setSelectedRoomTypeId] = useState("");
+  const [selectedSupplierId, setSelectedSupplierId] = useState(supplierOptions[0]?.id ?? "");
+  const [selectedPackageSlug, setSelectedPackageSlug] = useState("");
+
+  const effectiveSelectedHotelId = selectedHotelId || hotelOptions[0]?.id || "";
+  const selectedHotel = hotelOptions.find((hotel) => hotel.id === effectiveSelectedHotelId) ?? hotelOptions[0];
+  const currentMealPlans = selectedHotel?.mealPlans ?? [];
+  const currentRoomTypes = selectedHotel?.roomTypes ?? [];
+  const effectiveSelectedMealPlanId =
+    currentMealPlans.find((mealPlan) => mealPlan.id === selectedMealPlanId)?.id ?? currentMealPlans[0]?.id ?? "";
+  const effectiveSelectedRoomTypeId =
+    currentRoomTypes.find((roomType) => roomType.id === selectedRoomTypeId)?.id ?? currentRoomTypes[0]?.id ?? "";
+  const effectiveSelectedSupplierId = selectedSupplierId || supplierOptions[0]?.id || "";
 
   async function submit(formData: FormData) {
     setMessage(null);
@@ -94,10 +132,15 @@ export function AdminQuoteForm({
         const destination = String(formData.get("destination") ?? "");
         const checkIn = String(formData.get("checkIn") ?? "");
         const checkOut = String(formData.get("checkOut") ?? "");
-
-        const hotels = JSON.parse(String(formData.get("hotelsJson") ?? "[]"));
         const flightsRaw = String(formData.get("flightsJson") ?? "").trim();
         const transferRaw = String(formData.get("transferJson") ?? "").trim();
+        const supplierCode = String(formData.get("supplierCode") ?? "");
+        const supplierName = String(formData.get("supplierName") ?? "");
+        const hotelName = String(formData.get("hotelName") ?? "");
+        const hotelCode = String(formData.get("hotelCode") ?? "");
+        const hotelImage = String(formData.get("hotelImage") ?? "");
+        const mealPlanName = String(formData.get("mealPlanName") ?? "");
+        const roomTypeName = String(formData.get("roomTypeName") ?? "");
 
         const payload = {
           customerName: String(formData.get("customerName") ?? ""),
@@ -126,10 +169,51 @@ export function AdminQuoteForm({
             minorAges: String(formData.get("minorAges") ?? ""),
             generatedAt: new Date().toLocaleDateString("es-MX"),
             footerNote: String(formData.get("footerNote") ?? ""),
-            hotels,
+            hotels: [
+              {
+                supplierCode,
+                supplierName,
+                name: hotelName,
+                code: hotelCode,
+                image: hotelImage,
+                mealPlan: mealPlanName,
+                roomType: roomTypeName,
+                depositDueDate: String(formData.get("hotelDepositDueDate") ?? ""),
+                depositAmount: String(formData.get("hotelDepositAmount") ?? ""),
+                balanceDueDate: String(formData.get("hotelBalanceDueDate") ?? ""),
+                balanceAmount: String(formData.get("hotelBalanceAmount") ?? ""),
+                pricePerNight: String(formData.get("hotelPricePerNight") ?? ""),
+                total: String(formData.get("hotelTotal") ?? ""),
+                legend: String(formData.get("hotelLegend") ?? ""),
+                note: String(formData.get("hotelNote") ?? ""),
+              },
+            ],
             flights: flightsRaw ? JSON.parse(flightsRaw) : null,
             transfer: transferRaw ? JSON.parse(transferRaw) : null,
           },
+          quoteItems: [
+            {
+              itemType: "HOTEL",
+              title: hotelName,
+              description: `${destination} · ${roomTypeName} · ${mealPlanName}`,
+              unitPrice: Number(formData.get("subtotal") ?? 0),
+              quantity: 1,
+              lineTotal: Number(formData.get("subtotal") ?? 0),
+              currency: "MXN",
+              metadata: {
+                supplierCode,
+                supplierName,
+                hotelCode,
+                hotelName,
+                mealPlanName,
+                roomTypeName,
+                checkIn,
+                checkOut,
+                adults,
+                minors,
+              },
+            },
+          ],
         };
 
         const response = await fetch("/api/admin/quotes", {
@@ -148,19 +232,23 @@ export function AdminQuoteForm({
         router.push(`/admin/quotes/${result.quote.id}`);
         router.refresh();
       } catch (error) {
-        setMessage(error instanceof Error ? error.message : "Revisa los bloques JSON de hoteles, vuelos o traslados.");
+        setMessage(error instanceof Error ? error.message : "Revisa vuelos o traslados antes de guardar.");
       }
     });
   }
+
+  const packageSummary = packageOptions.find((travelPackage) => travelPackage.slug === selectedPackageSlug);
+  const currentRoomType = currentRoomTypes.find((roomType) => roomType.id === effectiveSelectedRoomTypeId);
 
   return (
     <form action={submit} className="grid gap-4 md:grid-cols-2">
       <div className="space-y-2 md:col-span-2">
         <label htmlFor="admin-quote-title" className="text-sm font-medium text-slate-700">
-          Título interno de la cotización
+          Titulo interno de la cotizacion
         </label>
-        <Input id="admin-quote-title" name="title" placeholder="Ej. Verano en Cancun para familia Terry" className="md:col-span-2" required />
+        <Input id="admin-quote-title" name="title" placeholder="Ej. Verano en Cancun para familia Terry" required />
       </div>
+
       <div className="space-y-2">
         <label htmlFor="admin-quote-customer" className="text-sm font-medium text-slate-700">
           Nombre del cliente
@@ -175,15 +263,19 @@ export function AdminQuoteForm({
       </div>
       <div className="space-y-2">
         <label htmlFor="admin-quote-phone" className="text-sm font-medium text-slate-700">
-          Teléfono o WhatsApp
+          Telefono o WhatsApp
         </label>
         <Input id="admin-quote-phone" name="phone" placeholder="Telefono / WhatsApp" />
       </div>
-      <div className="md:col-span-2 space-y-2">
-        <label className="text-sm font-medium text-slate-700">Paquete base (opcional)</label>
+      <div className="space-y-2">
+        <label htmlFor="admin-quote-package" className="text-sm font-medium text-slate-700">
+          Paquete comercial de referencia
+        </label>
         <select
+          id="admin-quote-package"
           name="packageSlug"
-          defaultValue=""
+          value={selectedPackageSlug}
+          onChange={(event) => setSelectedPackageSlug(event.target.value)}
           className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
         >
           <option value="">Cotizacion manual / sin paquete base</option>
@@ -194,19 +286,26 @@ export function AdminQuoteForm({
           ))}
         </select>
       </div>
+
       <div className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
         <p className="text-sm font-semibold text-slate-900">Datos del viaje</p>
-        <p className="mt-1 text-xs text-slate-500">Aclara fechas y ocupación antes de capturar montos o bloques de propuesta.</p>
+        <p className="mt-1 text-xs text-slate-500">Aterriza la propuesta comercial y la ocupacion exacta antes de guardar la cotizacion.</p>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <label htmlFor="admin-quote-destination" className="text-sm font-medium text-slate-700">
               Destino cotizado
             </label>
-            <Input id="admin-quote-destination" name="destination" placeholder="Destino cotizado" required />
+            <Input
+              id="admin-quote-destination"
+              name="destination"
+              placeholder="Destino cotizado"
+              defaultValue={packageSummary?.destination ?? selectedHotel?.destination ?? ""}
+              required
+            />
           </div>
           <div className="space-y-2">
             <label htmlFor="admin-quote-origin" className="text-sm font-medium text-slate-700">
-              Ciudad de origen
+              Ciudad de origen / salida
             </label>
             <Input id="admin-quote-origin" name="originCity" placeholder="Ciudad de origen" />
           </div>
@@ -218,7 +317,7 @@ export function AdminQuoteForm({
           </div>
           <div className="space-y-2">
             <label htmlFor="admin-quote-valid-until" className="text-sm font-medium text-slate-700">
-              Vigencia de la cotización
+              Vigencia de la cotizacion
             </label>
             <Input id="admin-quote-valid-until" name="validUntil" type="date" />
           </div>
@@ -236,19 +335,19 @@ export function AdminQuoteForm({
           </div>
           <div className="space-y-2">
             <label htmlFor="admin-quote-nights" className="text-sm font-medium text-slate-700">
-              Número de noches
+              Numero de noches
             </label>
             <Input id="admin-quote-nights" name="nights" type="number" defaultValue={4} min={1} />
           </div>
           <div className="space-y-2">
             <label htmlFor="admin-quote-adults" className="text-sm font-medium text-slate-700">
-              Número de adultos
+              Adultos
             </label>
             <Input id="admin-quote-adults" name="adults" type="number" defaultValue={2} min={1} />
           </div>
           <div className="space-y-2">
             <label htmlFor="admin-quote-minors" className="text-sm font-medium text-slate-700">
-              Número de menores
+              Menores
             </label>
             <Input id="admin-quote-minors" name="minors" type="number" defaultValue={0} min={0} />
           </div>
@@ -260,41 +359,156 @@ export function AdminQuoteForm({
           </div>
         </div>
       </div>
+
       <div className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-        <p className="text-sm font-semibold text-slate-900">Resumen económico</p>
-        <p className="mt-1 text-xs text-slate-500">Estos montos alimentan el total de la cotización y lo que verá el cliente.</p>
+        <p className="text-sm font-semibold text-slate-900">Hotel, proveedor y configuracion base</p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Hotel</label>
+            <select
+              name="hotelId"
+              value={effectiveSelectedHotelId}
+              onChange={(event) => {
+                const nextHotel = hotelOptions.find((hotel) => hotel.id === event.target.value);
+                setSelectedHotelId(event.target.value);
+                setSelectedMealPlanId(nextHotel?.mealPlans[0]?.id ?? "");
+                setSelectedRoomTypeId(nextHotel?.roomTypes[0]?.id ?? "");
+              }}
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            >
+              {hotelOptions.map((hotel) => (
+                <option key={hotel.id} value={hotel.id}>
+                  {hotel.name} · {hotel.destination}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Proveedor</label>
+            <select
+              name="supplierId"
+              value={effectiveSelectedSupplierId}
+              onChange={(event) => setSelectedSupplierId(event.target.value)}
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            >
+              {supplierOptions.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {supplier.name}
+                  {supplier.code ? ` · ${supplier.code}` : ""}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Plan de alimentos</label>
+            <select
+              name="mealPlanId"
+              value={effectiveSelectedMealPlanId}
+              onChange={(event) => setSelectedMealPlanId(event.target.value)}
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            >
+              {currentMealPlans.map((mealPlan) => (
+                <option key={mealPlan.id} value={mealPlan.id}>
+                  {mealPlan.name}
+                </option>
+              ))}
+              {currentMealPlans.length === 0 &&
+                mealPlanOptions.map((mealPlan) => (
+                  <option key={mealPlan.id} value={mealPlan.id}>
+                    {mealPlan.name}
+                  </option>
+                ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Tipo de habitacion</label>
+            <select
+              name="roomTypeId"
+              value={effectiveSelectedRoomTypeId}
+              onChange={(event) => setSelectedRoomTypeId(event.target.value)}
+              className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+            >
+              {currentRoomTypes.map((roomType) => (
+                <option key={roomType.id} value={roomType.id}>
+                  {roomType.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Codigo hotel</label>
+            <Input name="hotelCode" defaultValue={selectedHotel?.legacyHotelCode ?? ""} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Imagen para propuesta</label>
+            <Input name="hotelImage" defaultValue={selectedHotel?.heroImageUrl ?? ""} />
+          </div>
+        </div>
+
+        <input type="hidden" name="supplierCode" value={supplierOptions.find((supplier) => supplier.id === effectiveSelectedSupplierId)?.code ?? ""} />
+        <input type="hidden" name="supplierName" value={findSupplierName(supplierOptions, effectiveSelectedSupplierId)} />
+        <input type="hidden" name="hotelName" value={selectedHotel?.name ?? ""} />
+        <input type="hidden" name="mealPlanName" value={findMealPlanName(mealPlanOptions, effectiveSelectedMealPlanId)} />
+        <input type="hidden" name="roomTypeName" value={currentRoomType?.name ?? ""} />
+      </div>
+
+      <div className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
+        <p className="text-sm font-semibold text-slate-900">Condiciones hoteleras y pagos</p>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
-            <label htmlFor="admin-quote-subtotal" className="text-sm font-medium text-slate-700">
-              Subtotal cotizado
-            </label>
-            <Input id="admin-quote-subtotal" name="subtotal" type="number" defaultValue={9990} />
+            <label className="text-sm font-medium text-slate-700">Subtotal cotizado</label>
+            <Input name="subtotal" type="number" defaultValue={9990} />
           </div>
           <div className="space-y-2">
-            <label htmlFor="admin-quote-discount" className="text-sm font-medium text-slate-700">
-              Descuento aplicado
-            </label>
-            <Input id="admin-quote-discount" name="discountTotal" type="number" defaultValue={0} />
+            <label className="text-sm font-medium text-slate-700">Descuento aplicado</label>
+            <Input name="discountTotal" type="number" defaultValue={0} />
           </div>
           <div className="space-y-2">
-            <label htmlFor="admin-quote-deposit" className="text-sm font-medium text-slate-700">
-              Anticipo requerido
-            </label>
-            <Input id="admin-quote-deposit" name="depositRequired" type="number" defaultValue={3500} />
+            <label className="text-sm font-medium text-slate-700">Anticipo requerido</label>
+            <Input name="depositRequired" type="number" defaultValue={3500} />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Fecha limite anticipo</label>
+            <Input name="hotelDepositDueDate" type="date" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Monto anticipo</label>
+            <Input name="hotelDepositAmount" placeholder="$3,500 MXN" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Precio por noche</label>
+            <Input name="hotelPricePerNight" placeholder="$3,247 MXN" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Fecha liquidacion</label>
+            <Input name="hotelBalanceDueDate" type="date" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Monto saldo</label>
+            <Input name="hotelBalanceAmount" placeholder="$9,490 MXN" />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Total hotel</label>
+            <Input name="hotelTotal" placeholder="$12,990 MXN" required />
+          </div>
+        </div>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Leyenda comercial</label>
+            <Textarea name="hotelLegend" rows={3} placeholder="Pago inmediato, no acepta cambios ni cancelaciones." />
+          </div>
+          <div className="space-y-2">
+            <label className="text-sm font-medium text-slate-700">Nota visible</label>
+            <Textarea name="hotelNote" rows={3} placeholder="Incluye hospedaje, alimentos, amenidades y asistencia previa al viaje." />
           </div>
         </div>
       </div>
+
       <div className="space-y-2 md:col-span-2">
         <label htmlFor="admin-quote-notes" className="text-sm font-medium text-slate-700">
           Notas visibles al cliente
         </label>
-        <Textarea
-          id="admin-quote-notes"
-          name="customerNotes"
-          className="md:col-span-2"
-          rows={4}
-          placeholder="Notas visibles al cliente"
-        />
+        <Textarea id="admin-quote-notes" name="customerNotes" rows={4} placeholder="Notas visibles al cliente" />
       </div>
       <div className="space-y-2 md:col-span-2">
         <label htmlFor="admin-quote-footer" className="text-sm font-medium text-slate-700">
@@ -303,36 +517,18 @@ export function AdminQuoteForm({
         <Textarea
           id="admin-quote-footer"
           name="footerNote"
-          className="md:col-span-2"
           rows={2}
           defaultValue="*Precio cotizado por el total en moneda mexicana, sujeto a disponibilidad y cambios sin previo aviso."
-        />
-      </div>
-      <div className="space-y-2 md:col-span-2">
-        <label htmlFor="admin-quote-hotels-json" className="text-sm font-medium text-slate-700">
-          Bloque JSON de hoteles
-        </label>
-        <p className="text-xs text-slate-500">
-          Aquí capturas lo que debe aparecer en la propuesta final: hotel, plan, habitación, anticipo, saldo, precio por noche, leyenda y nota.
-        </p>
-        <Textarea
-          id="admin-quote-hotels-json"
-          name="hotelsJson"
-          className="md:col-span-2 min-h-72 font-mono text-xs"
-          defaultValue={defaultHotelsJson}
         />
       </div>
       <div className="space-y-2 md:col-span-2">
         <label htmlFor="admin-quote-flights-json" className="text-sm font-medium text-slate-700">
           Bloque JSON de vuelos
         </label>
-        <p className="text-xs text-slate-500">
-          Incluye segmentos, horarios y equipaje cuando la propuesta contemple vuelos.
-        </p>
         <Textarea
           id="admin-quote-flights-json"
           name="flightsJson"
-          className="md:col-span-2 min-h-60 font-mono text-xs"
+          className="min-h-60 font-mono text-xs"
           defaultValue={defaultFlightsJson}
         />
       </div>
@@ -340,13 +536,10 @@ export function AdminQuoteForm({
         <label htmlFor="admin-quote-transfer-json" className="text-sm font-medium text-slate-700">
           Bloque JSON de traslados
         </label>
-        <p className="text-xs text-slate-500">
-          Úsalo para aeropuerto, servicio contratado y tabla de precios por hotel si aplica.
-        </p>
         <Textarea
           id="admin-quote-transfer-json"
           name="transferJson"
-          className="md:col-span-2 min-h-48 font-mono text-xs"
+          className="min-h-48 font-mono text-xs"
           defaultValue={defaultTransferJson}
         />
       </div>

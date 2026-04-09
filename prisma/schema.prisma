@@ -82,6 +82,11 @@ enum TravelType {
   CUSTOM
 }
 
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+}
+
 enum PackageComponentType {
   HOTEL
   FLIGHT
@@ -432,38 +437,63 @@ model Destination {
 }
 
 model Supplier {
-  id         String             @id @default(cuid())
-  code       String?            @unique
-  name       String
-  email      String?
-  phone      String?
-  website    String?
-  notes      String?
-  createdAt  DateTime           @default(now())
-  updatedAt  DateTime           @updatedAt
-  hotels     Hotel[]
-  packages   Package[]
-  components PackageComponent[]
-  bookings   Booking[]
+  id             String             @id @default(cuid())
+  code           String?            @unique
+  name           String
+  displayName    String?
+  commercialName String?
+  email          String?
+  phone          String?
+  website        String?
+  status         SupplierStatus     @default(ACTIVE)
+  notes          String?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  hotels         Hotel[]
+  packages       Package[]
+  components     PackageComponent[]
+  bookings       Booking[]
 }
 
 model Hotel {
-  id            String      @id @default(cuid())
-  supplierId    String?
-  destinationId String
-  name          String
-  slug          String
-  category      String?
-  address       String?
-  description   String?
-  amenities     Json?
-  isActive      Boolean     @default(true)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
-  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
-  supplier      Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  images        HotelImage[]
-  packages      Package[]
+  id                String                  @id @default(cuid())
+  supplierId        String?
+  destinationId     String
+  legacyHotelCode   String?
+  name              String
+  slug              String
+  category          String?
+  starRating        Int?
+  propertyType      String?
+  shortDescription  String?
+  address           String?
+  phone             String?
+  checkInTime       String?
+  checkOutTime      String?
+  extraChargesNotes String?
+  internalNotes     String?
+  description       String?
+  heroImageUrl      String?
+  hasPool           Boolean                 @default(false)
+  hasSpa            Boolean                 @default(false)
+  hasGym            Boolean                 @default(false)
+  beachAccess       Boolean                 @default(false)
+  petFriendly       Boolean                 @default(false)
+  hasParking        Boolean                 @default(false)
+  hasWifi           Boolean                 @default(false)
+  hasAirConditioning Boolean                @default(false)
+  amenities         Json?
+  isActive          Boolean                 @default(true)
+  createdAt         DateTime                @default(now())
+  updatedAt         DateTime                @updatedAt
+  destination       Destination             @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  supplier          Supplier?               @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  images            HotelImage[]
+  packages          Package[]
+  mealPlans         HotelMealPlan[]
+  amenityAssignments HotelAmenityAssignment[]
+  roomTypes         HotelRoomType[]
+  packageComponents PackageComponent[]
 
   @@unique([destinationId, slug])
 }
@@ -478,6 +508,31 @@ model HotelImage {
   hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
 }
 
+model HotelAmenity {
+  id          String                  @id @default(cuid())
+  code        String                  @unique
+  name        String
+  description String?
+  sortOrder   Int                     @default(0)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  assignments HotelAmenityAssignment[]
+}
+
+model HotelAmenityAssignment {
+  id          String       @id @default(cuid())
+  hotelId      String
+  amenityId    String
+  isAvailable  Boolean     @default(true)
+  notes        String?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  amenity      HotelAmenity @relation(fields: [amenityId], references: [id], onDelete: Cascade)
+  hotel        Hotel       @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+
+  @@unique([hotelId, amenityId])
+}
+
 model MealPlan {
   id          String    @id @default(cuid())
   code        String    @unique
@@ -486,55 +541,96 @@ model MealPlan {
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
   packages    Package[]
+  hotels      HotelMealPlan[]
+  roomTypes   HotelRoomType[]
+  components  PackageComponent[]
+}
+
+model HotelMealPlan {
+  id          String    @id @default(cuid())
+  hotelId      String
+  mealPlanId   String
+  isAvailable  Boolean   @default(true)
+  notes        String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+  hotel        Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  mealPlan     MealPlan  @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([hotelId, mealPlanId])
+}
+
+model HotelRoomType {
+  id          String    @id @default(cuid())
+  hotelId      String
+  mealPlanId   String?
+  code        String?
+  name        String
+  description String?
+  maxAdults   Int       @default(2)
+  maxChildren Int       @default(0)
+  isActive    Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  hotel       Hotel     @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+  mealPlan    MealPlan? @relation(fields: [mealPlanId], references: [id], onDelete: SetNull)
+  packages    Package[] @relation("PackageDefaultRoomType")
+  components  PackageComponent[]
+
+  @@unique([hotelId, name])
 }
 
 model Package {
-  id             String             @id @default(cuid())
-  destinationId  String
-  hotelId        String?
-  supplierId     String?
-  mealPlanId     String?
-  name           String
-  slug           String             @unique
-  summary        String
-  description    String
-  locationLabel  String?
-  departureCity  String?
-  heroImageUrl   String?
-  galleryUrls    Json?
-  marketingTags  Json?
-  highlight      String?
-  durationDays   Int
-  durationNights Int
-  travelType     TravelType
-  originType     PackageOriginType  @default(CATALOG)
-  visibility     PackageVisibility  @default(PUBLIC)
-  baseCurrency   String             @default("MXN")
-  basePriceFrom  Decimal?           @db.Decimal(10, 2)
-  pricingMode    PricingMode        @default(PER_PERSON)
-  minTravelers   Int                @default(1)
-  maxTravelers   Int?
-  includedAdults Int                @default(2)
-  includedMinors Int                @default(0)
-  directBookable Boolean            @default(false)
-  reservationNote String?
-  isActive       Boolean            @default(true)
-  featured       Boolean            @default(false)
-  publishedAt    DateTime?
-  validFrom      DateTime?
-  validTo        DateTime?
-  createdAt      DateTime           @default(now())
-  updatedAt      DateTime           @updatedAt
-  destination    Destination        @relation(fields: [destinationId], references: [id], onDelete: Cascade)
-  hotel          Hotel?             @relation(fields: [hotelId], references: [id], onDelete: SetNull)
-  mealPlan       MealPlan?          @relation(fields: [mealPlanId], references: [id], onDelete: SetNull)
-  supplier       Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  components     PackageComponent[]
-  pricingRules   PackagePricingRule[]
-  promotions     Promotion[]
-  images         PackageImage[]
-  inquiries      Inquiry[]
-  quotes         Quote[]
+  id                       String                 @id @default(cuid())
+  destinationId            String
+  hotelId                  String?
+  supplierId               String?
+  mealPlanId               String?
+  defaultRoomTypeId        String?
+  name                     String
+  slug                     String                 @unique
+  summary                  String
+  description              String
+  locationLabel            String?
+  departureCity            String?
+  bookingConditionsSummary String?
+  priceBasis               String?
+  heroImageUrl             String?
+  galleryUrls              Json?
+  marketingTags            Json?
+  highlight                String?
+  durationDays             Int
+  durationNights           Int
+  travelType               TravelType
+  originType               PackageOriginType      @default(CATALOG)
+  visibility               PackageVisibility      @default(PUBLIC)
+  baseCurrency             String                 @default("MXN")
+  basePriceFrom            Decimal?               @db.Decimal(10, 2)
+  pricingMode              PricingMode            @default(PER_PERSON)
+  minTravelers             Int                    @default(1)
+  maxTravelers             Int?
+  includedAdults           Int                    @default(2)
+  includedMinors           Int                    @default(0)
+  directBookable           Boolean                @default(false)
+  reservationNote          String?
+  isActive                 Boolean                @default(true)
+  featured                 Boolean                @default(false)
+  publishedAt              DateTime?
+  validFrom                DateTime?
+  validTo                  DateTime?
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  destination              Destination            @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  hotel                    Hotel?                 @relation(fields: [hotelId], references: [id], onDelete: SetNull)
+  mealPlan                 MealPlan?              @relation(fields: [mealPlanId], references: [id], onDelete: SetNull)
+  defaultRoomType          HotelRoomType?         @relation("PackageDefaultRoomType", fields: [defaultRoomTypeId], references: [id], onDelete: SetNull)
+  supplier                 Supplier?              @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  components               PackageComponent[]
+  pricingRules             PackagePricingRule[]
+  promotions               Promotion[]
+  images                   PackageImage[]
+  inquiries                Inquiry[]
+  quotes                   Quote[]
 }
 
 model PackageImage {
@@ -548,18 +644,27 @@ model PackageImage {
 }
 
 model PackageComponent {
-  id          String               @id @default(cuid())
-  packageId   String
-  supplierId  String?
-  type        PackageComponentType
-  title       String
-  description String?
-  sortOrder   Int                  @default(0)
-  isIncluded  Boolean              @default(true)
-  metadata    Json?
-  package     Package              @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  supplier    Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull)
-  quoteItems  QuoteItem[]
+  id               String               @id @default(cuid())
+  packageId        String
+  supplierId       String?
+  hotelId          String?
+  roomTypeId       String?
+  mealPlanId       String?
+  type             PackageComponentType
+  title            String
+  description      String?
+  originCity       String?
+  destinationCity  String?
+  pricingReference String?
+  sortOrder        Int                  @default(0)
+  isIncluded       Boolean              @default(true)
+  metadata         Json?
+  package          Package              @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  supplier         Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  hotel            Hotel?               @relation(fields: [hotelId], references: [id], onDelete: SetNull)
+  roomType         HotelRoomType?       @relation(fields: [roomTypeId], references: [id], onDelete: SetNull)
+  mealPlan         MealPlan?            @relation(fields: [mealPlanId], references: [id], onDelete: SetNull)
+  quoteItems       QuoteItem[]
 }
 
 model PackagePricingRule {

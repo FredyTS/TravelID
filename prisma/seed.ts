@@ -1,5 +1,12 @@
 import { hash } from "bcryptjs";
-import { DiscountType, PrismaClient, PromotionAppliesTo, RoleKey, TravelType } from "@prisma/client";
+import {
+  DiscountType,
+  PrismaClient,
+  PromotionAppliesTo,
+  RoleKey,
+  SupplierStatus,
+  TravelType,
+} from "@prisma/client";
 import { env } from "@/lib/env";
 
 const prisma = new PrismaClient();
@@ -70,6 +77,235 @@ async function main() {
     },
   });
 
+  const supplier = await prisma.supplier.upsert({
+    where: { code: "OM1" },
+    update: {
+      name: "Creatur",
+      displayName: "Creatur",
+      commercialName: "Operadora Creatur",
+      status: SupplierStatus.ACTIVE,
+      phone: "(614) 469-62-79",
+      email: "alondratravelmx@gmail.com",
+    },
+    create: {
+      code: "OM1",
+      name: "Creatur",
+      displayName: "Creatur",
+      commercialName: "Operadora Creatur",
+      status: SupplierStatus.ACTIVE,
+      phone: "(614) 469-62-79",
+      email: "alondratravelmx@gmail.com",
+    },
+  });
+
+  const mealPlans = await Promise.all([
+    prisma.mealPlan.upsert({
+      where: { code: "AI" },
+      update: { name: "All Inclusive", description: "Alimentos, bebidas y amenidades incluidas." },
+      create: { code: "AI", name: "All Inclusive", description: "Alimentos, bebidas y amenidades incluidas." },
+    }),
+    prisma.mealPlan.upsert({
+      where: { code: "EP" },
+      update: { name: "Plan Europeo", description: "Solo hospedaje." },
+      create: { code: "EP", name: "Plan Europeo", description: "Solo hospedaje." },
+    }),
+    prisma.mealPlan.upsert({
+      where: { code: "AD" },
+      update: { name: "Alojamiento y desayuno", description: "Hospedaje con desayuno incluido." },
+      create: { code: "AD", name: "Alojamiento y desayuno", description: "Hospedaje con desayuno incluido." },
+    }),
+  ]);
+
+  const amenityCatalog = [
+    { code: "POOL", name: "Alberca", description: "Hotel con alberca." },
+    { code: "SPA", name: "Spa", description: "Servicio de spa o wellness." },
+    { code: "GYM", name: "Gym", description: "Gimnasio disponible." },
+    { code: "WIFI", name: "Wifi", description: "Internet disponible." },
+    { code: "AIR_CONDITIONING", name: "Aire acondicionado", description: "Habitaciones con aire acondicionado." },
+    { code: "PARKING", name: "Estacionamiento", description: "Estacionamiento disponible." },
+    { code: "PET_FRIENDLY", name: "Acepta mascotas", description: "Propiedad pet friendly." },
+    { code: "BEACH_ACCESS", name: "Acceso a playa", description: "Hotel con acceso a playa." },
+  ];
+
+  for (const [index, amenity] of amenityCatalog.entries()) {
+    await prisma.hotelAmenity.upsert({
+      where: { code: amenity.code },
+      update: {
+        name: amenity.name,
+        description: amenity.description,
+        sortOrder: index,
+      },
+      create: {
+        code: amenity.code,
+        name: amenity.name,
+        description: amenity.description,
+        sortOrder: index,
+      },
+    });
+  }
+
+  const hotel = await prisma.hotel.upsert({
+    where: {
+      destinationId_slug: {
+        destinationId: cancun.id,
+        slug: "hotel-cancun-resort",
+      },
+    },
+    update: {
+      supplierId: supplier.id,
+      legacyHotelCode: "101",
+      name: "Hotel Cancun Resort",
+      category: "5 estrellas",
+      starRating: 5,
+      propertyType: "Resort",
+      shortDescription: "Resort frente al mar para venta inmediata y cotizacion personalizada.",
+      address: "Zona Hotelera, Cancun, Quintana Roo, Mexico",
+      phone: "998 000 0000",
+      checkInTime: "15:00",
+      checkOutTime: "12:00",
+      extraChargesNotes: "Impuesto ambiental y resort fee sujetos a cambio.",
+      internalNotes: "Proveedor preferente para salidas desde CDMX y Chihuahua.",
+      description: "Resort all inclusive con amenidades familiares, acceso a playa y seguimiento comercial completo.",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=80",
+      hasPool: true,
+      hasSpa: true,
+      hasGym: true,
+      beachAccess: true,
+      petFriendly: false,
+      hasParking: true,
+      hasWifi: true,
+      hasAirConditioning: true,
+      amenities: ["Alberca", "Spa", "Gym", "Wifi", "Aire acondicionado", "Playa"],
+      isActive: true,
+    },
+    create: {
+      supplierId: supplier.id,
+      destinationId: cancun.id,
+      legacyHotelCode: "101",
+      name: "Hotel Cancun Resort",
+      slug: "hotel-cancun-resort",
+      category: "5 estrellas",
+      starRating: 5,
+      propertyType: "Resort",
+      shortDescription: "Resort frente al mar para venta inmediata y cotizacion personalizada.",
+      address: "Zona Hotelera, Cancun, Quintana Roo, Mexico",
+      phone: "998 000 0000",
+      checkInTime: "15:00",
+      checkOutTime: "12:00",
+      extraChargesNotes: "Impuesto ambiental y resort fee sujetos a cambio.",
+      internalNotes: "Proveedor preferente para salidas desde CDMX y Chihuahua.",
+      description: "Resort all inclusive con amenidades familiares, acceso a playa y seguimiento comercial completo.",
+      heroImageUrl:
+        "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=1200&q=80",
+      hasPool: true,
+      hasSpa: true,
+      hasGym: true,
+      beachAccess: true,
+      petFriendly: false,
+      hasParking: true,
+      hasWifi: true,
+      hasAirConditioning: true,
+      amenities: ["Alberca", "Spa", "Gym", "Wifi", "Aire acondicionado", "Playa"],
+      isActive: true,
+    },
+  });
+
+  for (const mealPlan of mealPlans) {
+    await prisma.hotelMealPlan.upsert({
+      where: {
+        hotelId_mealPlanId: {
+          hotelId: hotel.id,
+          mealPlanId: mealPlan.id,
+        },
+      },
+      update: {
+        isAvailable: true,
+      },
+      create: {
+        hotelId: hotel.id,
+        mealPlanId: mealPlan.id,
+        isAvailable: true,
+      },
+    });
+  }
+
+  const amenityRecords = await prisma.hotelAmenity.findMany({
+    where: { code: { in: ["POOL", "SPA", "GYM", "WIFI", "AIR_CONDITIONING", "PARKING", "BEACH_ACCESS"] } },
+  });
+
+  for (const amenity of amenityRecords) {
+    await prisma.hotelAmenityAssignment.upsert({
+      where: {
+        hotelId_amenityId: {
+          hotelId: hotel.id,
+          amenityId: amenity.id,
+        },
+      },
+      update: { isAvailable: true },
+      create: {
+        hotelId: hotel.id,
+        amenityId: amenity.id,
+        isAvailable: true,
+      },
+    });
+  }
+
+  const allInclusivePlan = mealPlans.find((mealPlan) => mealPlan.code === "AI");
+
+  const roomType = await prisma.hotelRoomType.upsert({
+    where: {
+      hotelId_name: {
+        hotelId: hotel.id,
+        name: "Junior Suite Ocean View",
+      },
+    },
+    update: {
+      code: "JSOV",
+      mealPlanId: allInclusivePlan?.id,
+      description: "Habitacion base para propuestas comerciales en Cancun.",
+      maxAdults: 2,
+      maxChildren: 2,
+      isActive: true,
+    },
+    create: {
+      hotelId: hotel.id,
+      code: "JSOV",
+      mealPlanId: allInclusivePlan?.id,
+      name: "Junior Suite Ocean View",
+      description: "Habitacion base para propuestas comerciales en Cancun.",
+      maxAdults: 2,
+      maxChildren: 2,
+      isActive: true,
+    },
+  });
+
+  const existingHotelImage = await prisma.hotelImage.findFirst({
+    where: {
+      hotelId: hotel.id,
+      url: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=900&q=80",
+    },
+  });
+
+  if (existingHotelImage) {
+    await prisma.hotelImage.update({
+      where: { id: existingHotelImage.id },
+      data: {
+        alt: "Vista principal del Hotel Cancun Resort",
+        sortOrder: 0,
+      },
+    });
+  } else {
+    await prisma.hotelImage.create({
+      data: {
+        hotelId: hotel.id,
+        url: "https://images.unsplash.com/photo-1514282401047-d79a71a590e8?auto=format&fit=crop&w=900&q=80",
+        alt: "Vista principal del Hotel Cancun Resort",
+        sortOrder: 0,
+      },
+    });
+  }
+
   await prisma.package.upsert({
     where: { slug: "escapada-cancun-all-inclusive" },
     update: {
@@ -92,9 +328,15 @@ async function main() {
       travelType: TravelType.BEACH,
       basePriceFrom: 12990,
       destinationId: cancun.id,
+      hotelId: hotel.id,
+      supplierId: supplier.id,
+      mealPlanId: allInclusivePlan?.id,
+      defaultRoomTypeId: roomType.id,
       includedAdults: 2,
       includedMinors: 0,
       directBookable: true,
+      bookingConditionsSummary: "Precio publicado para salida desde Ciudad de Mexico en Junior Suite Ocean View con plan all inclusive.",
+      priceBasis: "Tarifa publicada desde Ciudad de Mexico para 2 adultos.",
       reservationNote: "Precio publicado para salida desde Ciudad de Mexico. Si cambian ciudad de salida o viajeros, conviene cotizacion personalizada.",
       featured: true,
       publishedAt: new Date(),
@@ -120,9 +362,15 @@ async function main() {
       travelType: TravelType.BEACH,
       basePriceFrom: 12990,
       destinationId: cancun.id,
+      hotelId: hotel.id,
+      supplierId: supplier.id,
+      mealPlanId: allInclusivePlan?.id,
+      defaultRoomTypeId: roomType.id,
       includedAdults: 2,
       includedMinors: 0,
       directBookable: true,
+      bookingConditionsSummary: "Precio publicado para salida desde Ciudad de Mexico en Junior Suite Ocean View con plan all inclusive.",
+      priceBasis: "Tarifa publicada desde Ciudad de Mexico para 2 adultos.",
       reservationNote: "Precio publicado para salida desde Ciudad de Mexico. Si cambian ciudad de salida o viajeros, conviene cotizacion personalizada.",
       featured: true,
       publishedAt: new Date(),

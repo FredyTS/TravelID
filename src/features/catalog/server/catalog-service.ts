@@ -12,6 +12,9 @@ import { prisma } from "@/lib/db/prisma";
 const publicPackageInclude = {
   destination: true,
   hotel: true,
+  mealPlan: true,
+  supplier: true,
+  defaultRoomType: true,
 } satisfies Prisma.PackageInclude;
 
 type PublicPackageRecord = Prisma.PackageGetPayload<{
@@ -21,6 +24,9 @@ type PublicPackageRecord = Prisma.PackageGetPayload<{
 const adminPackageInclude = {
   destination: true,
   hotel: true,
+  supplier: true,
+  mealPlan: true,
+  defaultRoomType: true,
   promotions: true,
 } satisfies Prisma.PackageInclude;
 
@@ -78,6 +84,10 @@ function mapPackageForPublic(record: PublicPackageRecord) {
     slug: record.slug,
     name: record.name,
     destination: record.destination.name,
+    hotelName: record.hotel?.name ?? null,
+    mealPlanName: record.mealPlan?.name ?? null,
+    supplierName: record.supplier?.displayName ?? record.supplier?.name ?? null,
+    roomTypeName: record.defaultRoomType?.name ?? null,
     location:
       record.locationLabel ?? record.destination.region ?? record.destination.country ?? "Mexico",
     departureCity: record.departureCity ?? "Ciudad de Mexico",
@@ -97,6 +107,10 @@ function mapPackageForPublic(record: PublicPackageRecord) {
     tags: asStringArray(record.marketingTags),
     includedTravelers: buildIncludedTravelers(record),
     directBookable: record.directBookable,
+    bookingConditionsSummary:
+      record.bookingConditionsSummary ??
+      `${record.departureCity ?? "Ciudad de Mexico"} · ${record.defaultRoomType?.name ?? "Habitacion base"} · ${record.mealPlan?.name ?? "Plan por confirmar"}`,
+    priceBasis: record.priceBasis ?? null,
     reservationNote:
       record.reservationNote ??
       "El precio publicado aplica para la ciudad de salida indicada. Si cambian viajeros, edades o ciudad de salida, conviene una cotizacion personalizada.",
@@ -210,6 +224,9 @@ export async function getSalesPackageBySlug(slug: string) {
     include: {
       destination: true,
       hotel: true,
+      supplier: true,
+      mealPlan: true,
+      defaultRoomType: true,
     },
   });
 }
@@ -283,6 +300,16 @@ export async function getAdminCatalogOverview() {
       orderBy: { createdAt: "desc" },
       include: {
         destination: true,
+        supplier: true,
+        roomTypes: {
+          where: { isActive: true },
+          orderBy: { name: "asc" },
+        },
+        mealPlans: {
+          where: { isAvailable: true },
+          include: { mealPlan: true },
+          orderBy: { mealPlan: { name: "asc" } },
+        },
       },
     }),
     prisma.package.findMany({
@@ -311,7 +338,23 @@ export async function getDestinationOptions() {
 export async function getHotelOptions() {
   return prisma.hotel.findMany({
     where: { isActive: true },
-    include: { destination: true },
+    include: {
+      destination: true,
+      supplier: true,
+      images: {
+        orderBy: { sortOrder: "asc" },
+        take: 1,
+      },
+      roomTypes: {
+        where: { isActive: true },
+        orderBy: { name: "asc" },
+      },
+      mealPlans: {
+        where: { isAvailable: true },
+        include: { mealPlan: true },
+        orderBy: { mealPlan: { name: "asc" } },
+      },
+    },
     orderBy: { name: "asc" },
   });
 }
@@ -319,8 +362,51 @@ export async function getHotelOptions() {
 export async function getPackageOptions() {
   return prisma.package.findMany({
     where: { isActive: true },
-    include: { destination: true },
+    include: {
+      destination: true,
+      hotel: true,
+      mealPlan: true,
+      supplier: true,
+      defaultRoomType: true,
+    },
     orderBy: { name: "asc" },
+  });
+}
+
+export async function getSupplierOptions() {
+  return prisma.supplier.findMany({
+    where: { status: "ACTIVE" },
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getMealPlanOptions() {
+  return prisma.mealPlan.findMany({
+    orderBy: { name: "asc" },
+  });
+}
+
+export async function getHotelAmenityOptions() {
+  return prisma.hotelAmenity.findMany({
+    orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+  });
+}
+
+export async function getHotelRoomTypeOptions(hotelId?: string) {
+  return prisma.hotelRoomType.findMany({
+    where: {
+      isActive: true,
+      ...(hotelId ? { hotelId } : {}),
+    },
+    include: {
+      hotel: {
+        include: {
+          destination: true,
+        },
+      },
+      mealPlan: true,
+    },
+    orderBy: [{ hotel: { name: "asc" } }, { name: "asc" }],
   });
 }
 
@@ -333,6 +419,30 @@ export async function getDestinationById(id: string) {
 export async function getHotelById(id: string) {
   return prisma.hotel.findUnique({
     where: { id },
+    include: {
+      supplier: true,
+      images: {
+        orderBy: { sortOrder: "asc" },
+      },
+      mealPlans: {
+        include: {
+          mealPlan: true,
+        },
+        orderBy: { mealPlan: { name: "asc" } },
+      },
+      amenityAssignments: {
+        include: {
+          amenity: true,
+        },
+        orderBy: { amenity: { sortOrder: "asc" } },
+      },
+      roomTypes: {
+        include: {
+          mealPlan: true,
+        },
+        orderBy: { name: "asc" },
+      },
+    },
   });
 }
 

@@ -1,6 +1,11 @@
 import { quoteBuilderSections, quoteLineItems } from "@/lib/constants/mock-data";
 import { AdminQuoteForm } from "@/features/quotes/components/admin-quote-form";
-import { getPackageOptions } from "@/features/catalog/server/catalog-service";
+import {
+  getHotelOptions,
+  getMealPlanOptions,
+  getPackageOptions,
+  getSupplierOptions,
+} from "@/features/catalog/server/catalog-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,7 +13,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 export default async function NewQuotePage() {
-  const packageOptions = await getPackageOptions();
+  const [packageOptions, hotelOptions, supplierOptions, mealPlanOptions] = await Promise.all([
+    getPackageOptions(),
+    getHotelOptions(),
+    getSupplierOptions(),
+    getMealPlanOptions(),
+  ]);
 
   return (
     <div className="space-y-8">
@@ -39,6 +49,36 @@ export default async function NewQuotePage() {
                   slug: pkg.slug,
                   name: pkg.name,
                   destination: pkg.destination.name,
+                  hotelName: pkg.hotel?.name ?? "",
+                  supplierName: pkg.supplier?.displayName ?? pkg.supplier?.name ?? "",
+                  mealPlanName: pkg.mealPlan?.name ?? "",
+                  roomTypeName: pkg.defaultRoomType?.name ?? "",
+                }))}
+                hotelOptions={hotelOptions.map((hotel) => ({
+                  id: hotel.id,
+                  name: hotel.name,
+                  destination: hotel.destination.name,
+                  supplierName: hotel.supplier?.displayName ?? hotel.supplier?.name ?? "",
+                  legacyHotelCode: hotel.legacyHotelCode ?? "",
+                  heroImageUrl: hotel.heroImageUrl ?? hotel.images?.[0]?.url ?? "",
+                  mealPlans: hotel.mealPlans.map((entry) => ({
+                    id: entry.mealPlan.id,
+                    name: entry.mealPlan.name,
+                  })),
+                  roomTypes: hotel.roomTypes.map((roomType) => ({
+                    id: roomType.id,
+                    name: roomType.name,
+                    mealPlanId: roomType.mealPlanId ?? "",
+                  })),
+                }))}
+                supplierOptions={supplierOptions.map((supplier) => ({
+                  id: supplier.id,
+                  code: supplier.code ?? "",
+                  name: supplier.displayName ?? supplier.name,
+                }))}
+                mealPlanOptions={mealPlanOptions.map((mealPlan) => ({
+                  id: mealPlan.id,
+                  name: mealPlan.name,
                 }))}
               />
             </CardContent>

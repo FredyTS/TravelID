@@ -4,6 +4,8 @@ import {
   PackageComponentType,
   PaymentDueType,
   PaymentScheduleStatus,
+  Prisma,
+  QuoteItemSourceType,
   QuoteSource,
   QuoteStatus,
   QuoteVisibility,
@@ -11,10 +13,7 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { ensureCustomerPortalAccess } from "@/features/auth/server/customer-access";
 import { getSalesPackageBySlug } from "@/features/catalog/server/catalog-service";
-import {
-  renderQuoteProposalHtml,
-  type QuoteProposalData,
-} from "@/features/quotes/server/proposal-template";
+import { renderQuoteProposalHtml, type QuoteProposalData } from "@/features/quotes/server/proposal-template";
 
 function generateQuoteNumber() {
   return `Q-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
@@ -140,6 +139,15 @@ export async function createDirectReservation(input: {
           unitPrice: subtotal,
           quantity: 1,
           lineTotal: subtotal,
+          metadata: {
+            departureCity: travelPackage.departureCity,
+            supplierName: travelPackage.supplier?.displayName ?? travelPackage.supplier?.name ?? null,
+            hotelName: travelPackage.hotel?.name ?? null,
+            mealPlanName: travelPackage.mealPlan?.name ?? null,
+            roomTypeName: travelPackage.defaultRoomType?.name ?? null,
+            bookingConditionsSummary: travelPackage.bookingConditionsSummary ?? null,
+            priceBasis: travelPackage.priceBasis ?? null,
+          },
         },
       },
       paymentSchedules: {
@@ -198,6 +206,16 @@ export async function createAdminQuote(input: {
   validUntil?: string;
   customerNotes?: string;
   proposalData?: QuoteProposalData | null;
+  quoteItems?: Array<{
+    itemType: PackageComponentType;
+    title: string;
+    description?: string;
+    unitPrice: number;
+    quantity: number;
+    lineTotal: number;
+    currency?: string;
+    metadata?: Record<string, unknown>;
+  }>;
 }) {
   const [firstName, ...rest] = input.customerName.trim().split(" ");
   const lastName = rest.join(" ") || undefined;
@@ -211,14 +229,47 @@ export async function createAdminQuote(input: {
 
   await ensureCustomerPortalAccess(customer.id);
 
-  const matchedPackage = input.packageSlug
-    ? await getSalesPackageBySlug(input.packageSlug)
-    : null;
+  const matchedPackage = input.packageSlug ? await getSalesPackageBySlug(input.packageSlug) : null;
   const subtotal = input.subtotal;
   const discountTotal = input.discountTotal ?? 0;
   const grandTotal = Math.max(subtotal - discountTotal, 0);
   const depositRequired = input.depositRequired ?? Math.round(grandTotal * 0.3);
   const proposalHtml = input.proposalData ? renderQuoteProposalHtml(input.proposalData) : null;
+
+  const lineItems =
+    input.quoteItems && input.quoteItems.length > 0
+      ? input.quoteItems.map((item, index) => ({
+          sourceType: matchedPackage ? QuoteItemSourceType.PACKAGE_COMPONENT : QuoteItemSourceType.MANUAL,
+          itemType: item.itemType,
+          title: item.title,
+          description: item.description,
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+          currency: item.currency ?? "MXN",
+          sortOrder: index,
+          metadata: item.metadata as Prisma.InputJsonValue | undefined,
+        }))
+      : [
+          {
+            sourceType: matchedPackage ? QuoteItemSourceType.PACKAGE_COMPONENT : QuoteItemSourceType.MANUAL,
+            itemType: PackageComponentType.OTHER,
+            title: matchedPackage?.name ?? input.title,
+            description: matchedPackage
+              ? `${matchedPackage.destination.name} · ${buildIncludedTravelersLabel(matchedPackage)}`
+              : "Cotizacion personalizada",
+            unitPrice: grandTotal,
+            quantity: 1,
+            lineTotal: grandTotal,
+            metadata: (input.proposalData
+              ? {
+                  proposalHotel: input.proposalData.hotels[0] ?? null,
+                  proposalFlight: input.proposalData.flights ?? null,
+                  proposalTransfer: input.proposalData.transfer ?? null,
+                }
+              : undefined) as Prisma.InputJsonValue | undefined,
+          },
+        ];
 
   const quote = await prisma.quote.create({
     data: {
@@ -232,9 +283,7 @@ export async function createAdminQuote(input: {
       visibility: QuoteVisibility.AUTH_PORTAL,
       title: input.title,
       originCity: input.originCity,
-      departureDateTentative: input.departureDateTentative
-        ? new Date(input.departureDateTentative)
-        : undefined,
+      departureDateTentative: input.departureDateTentative ? new Date(input.departureDateTentative) : undefined,
       adults: input.adults,
       minors: input.minors,
       subtotal,
@@ -247,17 +296,7 @@ export async function createAdminQuote(input: {
       proposalData: input.proposalData ?? undefined,
       proposalHtml: proposalHtml ?? undefined,
       items: {
-        create: {
-          sourceType: matchedPackage ? "PACKAGE_COMPONENT" : "MANUAL",
-          itemType: PackageComponentType.OTHER,
-          title: matchedPackage?.name ?? input.title,
-          description: matchedPackage
-            ? `${matchedPackage.destination.name} · ${buildIncludedTravelersLabel(matchedPackage)}`
-            : "Cotizacion personalizada",
-          unitPrice: grandTotal,
-          quantity: 1,
-          lineTotal: grandTotal,
-        },
+        create: lineItems,
       },
     },
     include: {

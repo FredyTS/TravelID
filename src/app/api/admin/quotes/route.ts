@@ -1,9 +1,12 @@
+import { PackageComponentType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { requireAdminSession } from "@/lib/auth/guards";
 import { createAdminQuote } from "@/features/orders/server/sales-service";
 
 const hotelProposalSchema = z.object({
+  supplierCode: z.string().optional(),
+  supplierName: z.string().optional(),
   name: z.string().min(2),
   code: z.string().optional(),
   image: z.string().url().optional(),
@@ -83,6 +86,20 @@ const adminQuoteSchema = z.object({
   validUntil: z.string().optional(),
   customerNotes: z.string().optional(),
   proposalData: quoteProposalSchema.optional(),
+  quoteItems: z
+    .array(
+      z.object({
+        itemType: z.nativeEnum(PackageComponentType),
+        title: z.string().min(2),
+        description: z.string().optional(),
+        unitPrice: z.number().nonnegative(),
+        quantity: z.number().int().min(1),
+        lineTotal: z.number().nonnegative(),
+        currency: z.string().min(3).optional(),
+        metadata: z.record(z.string(), z.any()).optional(),
+      }),
+    )
+    .optional(),
 });
 
 export async function POST(request: Request) {

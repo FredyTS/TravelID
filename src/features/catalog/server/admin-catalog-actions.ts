@@ -32,6 +32,31 @@ function parseJsonStringArray(value: FormDataEntryValue | null) {
   return normalized;
 }
 
+function parseMultiValue(formData: FormData, name: string) {
+  return formData
+    .getAll(name)
+    .map((value) => String(value).trim())
+    .filter(Boolean);
+}
+
+function parseMultilineValues(value: FormDataEntryValue | null) {
+  return String(value ?? "")
+    .split(/\r?\n|,/)
+    .map((item) => item.trim())
+    .filter(Boolean);
+}
+
+function parseJsonArray<T>(value: FormDataEntryValue | null, fallback: T[] = []) {
+  const normalized = String(value ?? "").trim();
+
+  if (!normalized) {
+    return fallback;
+  }
+
+  const parsed = JSON.parse(normalized);
+  return Array.isArray(parsed) ? (parsed as T[]) : fallback;
+}
+
 export async function saveDestinationAction(formData: FormData) {
   const id = valueOrNull(formData.get("id"));
   const name = String(formData.get("name") ?? "").trim();
@@ -87,33 +112,129 @@ export async function saveHotelAction(formData: FormData) {
   const id = valueOrNull(formData.get("id"));
   const name = String(formData.get("name") ?? "").trim();
   const destinationId = String(formData.get("destinationId") ?? "");
+  const amenityIds = parseMultiValue(formData, "amenityIds");
+  const mealPlanIds = parseMultiValue(formData, "mealPlanIds");
+  const imageUrls = parseMultilineValues(formData.get("imageUrls"));
+  const roomTypes = parseJsonArray<{
+    code?: string;
+    name: string;
+    description?: string;
+    maxAdults?: number;
+    maxChildren?: number;
+    mealPlanId?: string | null;
+    isActive?: boolean;
+  }>(formData.get("roomTypesJson"));
 
   if (!name || !destinationId) {
     throw new Error("El hotel necesita nombre y destino.");
   }
 
   const data = {
+    supplierId: valueOrNull(formData.get("supplierId")),
     name,
     slug: toSlug(valueOrNull(formData.get("slug")) ?? name),
     destinationId,
+    legacyHotelCode: valueOrNull(formData.get("legacyHotelCode")),
     category: valueOrNull(formData.get("category")),
+    starRating: valueOrNull(formData.get("starRating")) ? parseNumber(formData.get("starRating"), 0) : null,
+    propertyType: valueOrNull(formData.get("propertyType")),
+    shortDescription: valueOrNull(formData.get("shortDescription")),
     address: valueOrNull(formData.get("address")),
+    phone: valueOrNull(formData.get("phone")),
+    checkInTime: valueOrNull(formData.get("checkInTime")),
+    checkOutTime: valueOrNull(formData.get("checkOutTime")),
+    extraChargesNotes: valueOrNull(formData.get("extraChargesNotes")),
+    internalNotes: valueOrNull(formData.get("internalNotes")),
     description: valueOrNull(formData.get("description")),
+    heroImageUrl: valueOrNull(formData.get("heroImageUrl")),
     isActive: parseBoolean(formData.get("isActive")),
     amenities: parseJsonStringArray(formData.get("amenities")),
+    hasPool: parseBoolean(formData.get("hasPool")),
+    hasSpa: parseBoolean(formData.get("hasSpa")),
+    hasGym: parseBoolean(formData.get("hasGym")),
+    beachAccess: parseBoolean(formData.get("beachAccess")),
+    petFriendly: parseBoolean(formData.get("petFriendly")),
+    hasParking: parseBoolean(formData.get("hasParking")),
+    hasWifi: parseBoolean(formData.get("hasWifi")),
+    hasAirConditioning: parseBoolean(formData.get("hasAirConditioning")),
   };
 
-  if (id) {
-    await prisma.hotel.update({
-      where: { id },
-      data,
+  const hotel = id
+    ? await prisma.hotel.update({
+        where: { id },
+        data,
+      })
+    : await prisma.hotel.create({ data });
+
+  await prisma.hotelAmenityAssignment.deleteMany({
+    where: { hotelId: hotel.id },
+  });
+
+  if (amenityIds.length > 0) {
+    await prisma.hotelAmenityAssignment.createMany({
+      data: amenityIds.map((amenityId) => ({
+        hotelId: hotel.id,
+        amenityId,
+        isAvailable: true,
+      })),
+      skipDuplicates: true,
     });
-  } else {
-    await prisma.hotel.create({ data });
+  }
+
+  await prisma.hotelMealPlan.deleteMany({
+    where: { hotelId: hotel.id },
+  });
+
+  if (mealPlanIds.length > 0) {
+    await prisma.hotelMealPlan.createMany({
+      data: mealPlanIds.map((mealPlanId) => ({
+        hotelId: hotel.id,
+        mealPlanId,
+        isAvailable: true,
+      })),
+      skipDuplicates: true,
+    });
+  }
+
+  await prisma.hotelRoomType.deleteMany({
+    where: { hotelId: hotel.id },
+  });
+
+  if (roomTypes.length > 0) {
+    await prisma.hotelRoomType.createMany({
+      data: roomTypes
+        .filter((roomType) => roomType?.name?.trim())
+        .map((roomType) => ({
+          hotelId: hotel.id,
+          code: roomType.code?.trim() || null,
+          name: roomType.name.trim(),
+          description: roomType.description?.trim() || null,
+          maxAdults: Number(roomType.maxAdults ?? 2),
+          maxChildren: Number(roomType.maxChildren ?? 0),
+          mealPlanId: roomType.mealPlanId?.trim() || null,
+          isActive: roomType.isActive ?? true,
+        })),
+    });
+  }
+
+  await prisma.hotelImage.deleteMany({
+    where: { hotelId: hotel.id },
+  });
+
+  if (imageUrls.length > 0) {
+    await prisma.hotelImage.createMany({
+      data: imageUrls.map((url, index) => ({
+        hotelId: hotel.id,
+        url,
+        alt: `${hotel.name} imagen ${index + 1}`,
+        sortOrder: index,
+      })),
+    });
   }
 
   revalidatePath("/admin/hotels");
   revalidatePath("/admin/packages");
+  revalidatePath("/paquetes");
 }
 
 export async function toggleHotelActiveAction(formData: FormData) {
@@ -145,10 +266,15 @@ export async function savePackageAction(formData: FormData) {
     slug: toSlug(valueOrNull(formData.get("slug")) ?? name),
     destinationId,
     hotelId: valueOrNull(formData.get("hotelId")),
+    supplierId: valueOrNull(formData.get("supplierId")),
+    mealPlanId: valueOrNull(formData.get("mealPlanId")),
+    defaultRoomTypeId: valueOrNull(formData.get("defaultRoomTypeId")),
     summary: String(formData.get("summary") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
     locationLabel: valueOrNull(formData.get("locationLabel")),
     departureCity: valueOrNull(formData.get("departureCity")),
+    bookingConditionsSummary: valueOrNull(formData.get("bookingConditionsSummary")),
+    priceBasis: valueOrNull(formData.get("priceBasis")),
     heroImageUrl: valueOrNull(formData.get("heroImageUrl")),
     galleryUrls: parseJsonStringArray(formData.get("galleryUrls")),
     marketingTags: parseJsonStringArray(formData.get("marketingTags")),
@@ -184,6 +310,7 @@ export async function savePackageAction(formData: FormData) {
   }
 
   revalidatePath("/admin/packages");
+  revalidatePath("/admin/hotels");
   revalidatePath("/paquetes");
   revalidatePath("/");
   revalidatePath("/promociones");

@@ -18,6 +18,7 @@ Plataforma web full-stack para una agencia de viajes enfocada en vender paquetes
 
 ### Panel admin
 - dashboard operativo con métricas reales
+- catalogos extendidos para hoteles, proveedores, planes, amenidades y habitaciones
 - gestión de cotizaciones y pedidos
 - cotizaciones con propuesta HTML detallada para cliente
 - inbox de conversaciones cliente-admin
@@ -98,6 +99,7 @@ npm run db:seed
 
 Ya está cubierto:
 - home comercial y catálogo público
+- catalogo interno enriquecido para hoteles y paquetes
 - reserva directa y solicitud de cotización
 - creación de cotizaciones desde admin
 - generación de propuesta HTML guardada dentro de la cotización
@@ -116,4 +118,5 @@ Pendientes siguientes:
 
 - [Arranque local](./docs/setup-local.md)
 - [Resumen funcional](./docs/project-overview.md)
+- [Catalogos extendidos](./docs/catalog-model.md)
 - [Pagos](./docs/payments.md)
