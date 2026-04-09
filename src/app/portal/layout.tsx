@@ -5,6 +5,7 @@ import { getServerAuthSession } from "@/lib/auth/session";
 const portalNav = [
   { href: "/portal", label: "Resumen" },
   { href: "/portal/viajes", label: "Viajes" },
+  { href: "/portal/inbox", label: "Inbox" },
   { href: "/portal/documentos", label: "Documentos" },
   { href: "/portal/pagos", label: "Pagos" },
   { href: "/portal/perfil", label: "Perfil" },
@@ -23,7 +24,7 @@ export default async function PortalLayout({ children }: { children: React.React
     <DashboardShell
       nav={portalNav}
       title="Portal del cliente"
-      subtitle="Seguimiento del viaje, pagos, documentos y actualizaciones visibles."
+      subtitle="Consulta tu viaje, paga tu saldo, descarga documentos y escribe directamente al admin."
     >
       {children}
     </DashboardShell>

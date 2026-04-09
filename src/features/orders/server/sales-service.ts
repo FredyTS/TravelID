@@ -10,6 +10,7 @@ import {
 } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { marketingPackages } from "@/lib/constants/mock-data";
+import { ensureCustomerPortalAccess } from "@/features/auth/server/customer-access";
 
 function generateQuoteNumber() {
   return `Q-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
@@ -94,6 +95,8 @@ export async function createDirectReservation(input: {
     phone: input.phone,
     source: "direct-reservation",
   });
+
+  await ensureCustomerPortalAccess(customer.id);
 
   const adminUserId = await getDefaultAdminUserId();
   const subtotal = travelPackage.priceFrom;
@@ -189,6 +192,8 @@ export async function createAdminQuote(input: {
     source: "admin-quote",
   });
 
+  await ensureCustomerPortalAccess(customer.id);
+
   const matchedPackage = input.packageSlug
     ? marketingPackages.find((item) => item.slug === input.packageSlug)
     : null;
@@ -276,6 +281,8 @@ export async function convertQuoteToOrder(input: {
   if (!quote.customerId) {
     throw new Error("La cotizacion no tiene cliente asociado.");
   }
+
+  await ensureCustomerPortalAccess(quote.customerId);
 
   if (quote.convertedOrderId || quote.convertedOrder) {
     return quote.convertedOrder;

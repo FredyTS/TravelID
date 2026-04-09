@@ -1,9 +1,12 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import EmailProvider from "next-auth/providers/email";
 import { compare } from "bcryptjs";
 import { prisma } from "@/lib/db/prisma";
 import { adminRoles } from "@/lib/auth/roles";
+import { sendMagicLinkEmail } from "@/lib/email/transactional";
+import { env } from "@/lib/env";
 
 async function getUserPrimaryRole(userId: string) {
   const userRole = await prisma.userRole.findFirst({
@@ -22,6 +25,7 @@ export const authOptions: NextAuthOptions = {
   },
   pages: {
     signIn: "/login",
+    verifyRequest: "/acceso",
   },
   providers: [
     CredentialsProvider({
@@ -54,6 +58,18 @@ export const authOptions: NextAuthOptions = {
           email: user.email,
           name: [user.firstName, user.lastName].filter(Boolean).join(" "),
         };
+      },
+    }),
+    EmailProvider({
+      from: env.emailFrom,
+      async sendVerificationRequest({ identifier, url }) {
+        const host = new URL(url).host;
+
+        await sendMagicLinkEmail({
+          email: identifier,
+          url,
+          host,
+        });
       },
     }),
   ],

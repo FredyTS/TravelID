@@ -3,7 +3,7 @@ import { PlaceholderTable } from "@/components/shared/placeholder-table";
 export default function AdminLeadsPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-4xl text-white">Leads</h1>
+      <h1 className="text-4xl text-slate-950">Leads</h1>
       <PlaceholderTable
         columns={["Lead", "Fuente", "Estado", "Seguimiento"]}
         rows={[

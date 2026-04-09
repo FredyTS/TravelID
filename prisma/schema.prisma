@@ -200,11 +200,13 @@ enum PaymentScheduleStatus {
 
 enum PaymentProvider {
   STRIPE
+  MERCADO_PAGO
   MANUAL
 }
 
 enum PaymentStatus {
   PENDING
+  PROCESSING
   SUCCEEDED
   FAILED
   REFUNDED
@@ -214,9 +216,21 @@ enum PaymentStatus {
 
 enum PaymentMethod {
   CARD
+  SPEI
   TRANSFER
   CASH
   OTHER
+}
+
+enum ConversationThreadType {
+  GENERAL
+  ORDER
+  QUOTE
+}
+
+enum ConversationParticipantRole {
+  ADMIN
+  CLIENT
 }
 
 enum DocumentType {
@@ -282,6 +296,8 @@ model User {
   uploadedDocuments Document[]    @relation("DocumentUploader")
   createdUpdates    TravelUpdate[] @relation("TravelUpdateCreator")
   createdRefunds    Refund[]      @relation("RefundCreator")
+  conversationParticipants ConversationParticipant[]
+  conversationMessages ConversationMessage[]
   activityLogs      ActivityLog[]
   auditLogs         AuditLog[]
 }
@@ -327,6 +343,9 @@ model Customer {
   quotes           Quote[]
   orders           Order[]
   documents        Document[]
+  conversationThreads ConversationThread[]
+  conversationParticipants ConversationParticipant[]
+  conversationMessages ConversationMessage[]
 }
 
 model TravelerProfile {
@@ -617,6 +636,7 @@ model Quote {
   items                  QuoteItem[]
   documents              Document[]
   payments               Payment[]
+  conversationThreads    ConversationThread[]
 }
 
 model QuoteTraveler {
@@ -693,6 +713,7 @@ model Order {
   documents            Document[]
   vouchers             Voucher[]
   travelUpdates        TravelUpdate[]
+  conversationThreads  ConversationThread[]
 }
 
 model OrderItem {
@@ -853,6 +874,60 @@ model TravelUpdate {
   order           Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
 }
 
+model ConversationThread {
+  id            String                    @id @default(cuid())
+  customerId    String
+  orderId       String?
+  quoteId       String?
+  threadType    ConversationThreadType   @default(GENERAL)
+  subject       String
+  lastMessageAt DateTime?
+  createdAt     DateTime                  @default(now())
+  updatedAt     DateTime                  @updatedAt
+  customer      Customer                  @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  order         Order?                    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  quote         Quote?                    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  participants  ConversationParticipant[]
+  messages      ConversationMessage[]
+
+  @@index([customerId, lastMessageAt])
+}
+
+model ConversationParticipant {
+  id         String                      @id @default(cuid())
+  threadId   String
+  userId     String?
+  customerId String?
+  role       ConversationParticipantRole
+  lastReadAt DateTime?
+  createdAt  DateTime                    @default(now())
+  updatedAt  DateTime                    @updatedAt
+  customer   Customer?                   @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  thread     ConversationThread          @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  user       User?                       @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([threadId, userId])
+  @@unique([threadId, customerId])
+}
+
+model ConversationMessage {
+  id          String                    @id @default(cuid())
+  threadId    String
+  customerId  String?
+  senderUserId String?
+  senderRole  ConversationParticipantRole
+  body        String
+  readAt      DateTime?
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
+  customer    Customer?                 @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  senderUser  User?                     @relation(fields: [senderUserId], references: [id], onDelete: SetNull)
+  thread      ConversationThread        @relation(fields: [threadId], references: [id], onDelete: Cascade)
+
+  @@index([threadId, createdAt])
+  @@index([threadId, readAt])
+}
+
 model ActivityLog {
   id          String   @id @default(cuid())
   entityType  String
@@ -890,6 +965,14 @@ model Setting {
 }
 
 model StripeEventLog {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  eventType   String
+  processedAt DateTime @default(now())
+  payload     Json?
+}
+
+model MercadoPagoEventLog {
   id          String   @id @default(cuid())
   eventId     String   @unique
   eventType   String

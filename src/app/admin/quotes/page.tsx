@@ -18,10 +18,10 @@ export default async function AdminQuotesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-4">
         <div>
-          <h1 className="text-4xl text-white">Cotizaciones</h1>
-          <p className="mt-2 text-slate-300">Propuestas guardadas en la base y listas para convertirse en pedido.</p>
+          <h1 className="text-4xl text-slate-950">Cotizaciones</h1>
+          <p className="mt-2 text-slate-600">Propuestas guardadas en la base y listas para convertirse en pedido.</p>
         </div>
-        <Link href="/admin/quotes/new" className="text-sm font-medium text-cyan-300">
+        <Link href="/admin/quotes/new" className="text-sm font-medium text-primary">
           Nueva cotizacion
         </Link>
       </div>

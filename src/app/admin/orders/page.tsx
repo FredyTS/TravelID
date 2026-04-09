@@ -18,8 +18,8 @@ export default async function AdminOrdersPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl text-white">Pedidos</h1>
-          <p className="mt-2 text-slate-300">
+          <h1 className="text-4xl text-slate-950">Pedidos</h1>
+          <p className="mt-2 text-slate-600">
             Seguimiento central de reservas confirmadas, pagos, documentos y entrega final.
           </p>
         </div>

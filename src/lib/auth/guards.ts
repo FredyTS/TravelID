@@ -10,3 +10,13 @@ export async function requireAdminSession() {
 
   return session;
 }
+
+export async function requireCustomerSession() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.id || !session.user.customerId) {
+    return null;
+  }
+
+  return session;
+}
