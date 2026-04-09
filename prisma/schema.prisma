@@ -618,6 +618,9 @@ model Quote {
   validUntil             DateTime?
   internalNotes          String?
   customerNotes          String?
+  proposalData           Json?
+  proposalHtml           String?
+  proposalVersion        Int             @default(1)
   shareToken             String?         @unique
   sentAt                 DateTime?
   viewedAt               DateTime?

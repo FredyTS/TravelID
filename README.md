@@ -19,6 +19,7 @@ Plataforma web full-stack para una agencia de viajes enfocada en vender paquetes
 ### Panel admin
 - dashboard operativo con métricas reales
 - gestión de cotizaciones y pedidos
+- cotizaciones con propuesta HTML detallada para cliente
 - inbox de conversaciones cliente-admin
 - detalle de pedido con cobranza, timeline, documentos y mensajes
 
@@ -99,6 +100,7 @@ Ya está cubierto:
 - home comercial y catálogo público
 - reserva directa y solicitud de cotización
 - creación de cotizaciones desde admin
+- generación de propuesta HTML guardada dentro de la cotización
 - conversión de cotización a pedido
 - portal del cliente con pagos, documentos y mensajes
 - inbox admin-cliente
