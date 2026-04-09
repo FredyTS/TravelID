@@ -2,55 +2,42 @@
 
 ## Producto
 
-Alondra Travel MX es una plataforma para vender paquetes vacacionales y gestionar el ciclo comercial completo:
+Alondra Travel MX conecta la cara comercial y la operación del viaje en una sola app:
 
-1. descubrimiento del paquete
-2. reserva directa o solicitud de cotización
-3. generación de pedido
-4. pagos
-5. seguimiento previo al viaje
+1. promoción de paquetes
+2. reserva directa o cotización personalizada
+3. creación de pedido
+4. cobro de anticipo o saldo
+5. seguimiento desde portal del cliente
+6. comunicación directa entre cliente y admin
 
-## Enfoque de negocio
+## Enfoque operativo actual
 
-El foco principal del sistema es comercial y operativo:
-
-- vender paquetes ya armados
-- permitir cotizaciones personalizadas cuando el paquete no encaja
-- gestionar pedidos y su avance
-- mantener trazabilidad del cliente, la cotización y el pedido
+- un solo admin gestiona ventas, pedidos, pagos y mensajes
+- el cliente entra con cuenta automática y magic link
+- el portal concentra seguimiento, pagos y dudas
+- el panel admin concentra operación, cobranza y atención
 
 ## Flujos implementados hoy
 
-### 1. Reserva directa
+### Reserva directa
 - el cliente entra al catálogo
-- ve un paquete con precio publicado para una ocupación específica
-- si le funciona tal cual, inicia una reserva directa
-- el sistema crea un `order` con calendario de cobro base
+- si el paquete aplica tal cual, genera su reserva
+- el sistema crea cliente, acceso de portal y pedido con calendario de cobro
 
-### 2. Cotización personalizada
-- el cliente solicita cotización desde web
-- el admin crea una cotización desde panel
-- la cotización se guarda en base de datos
+### Cotización personalizada
+- el cliente solicita una propuesta
+- el admin crea la cotización
+- el cliente puede verla en portal
 - el admin puede convertirla a pedido
 
-### 3. Gestión interna
-- el admin entra al panel
-- revisa cotizaciones
-- convierte una cotización a pedido
-- consulta estado financiero y conceptos del pedido
+### Postventa y seguimiento
+- el cliente revisa su viaje en portal
+- paga desde Mercado Pago
+- consulta documentos y updates
+- escribe al admin desde inbox
 
-## Arquitectura
-
-### Estilo
-Monolito modular sobre Next.js.
-
-### Principios
-- UI separada de lógica comercial
-- Prisma como capa de persistencia
-- features por dominio
-- rutas públicas y privadas claramente separadas
-
-## Dominios actuales
+## Dominios activos
 
 ### Público
 - home
@@ -60,43 +47,26 @@ Monolito modular sobre Next.js.
 - cotizar
 - reservar
 
+### Portal
+- resumen
+- viajes
+- pagos
+- documentos
+- inbox
+- perfil
+
 ### Admin
 - dashboard
-- cotizaciones
+- conversaciones
 - pedidos
+- cotizaciones
+- pagos
 - clientes
-- leads e inquiries
+- leads y solicitudes
 
-### Plataforma
-- autenticación
-- permisos
-- prisma
-- seeds
-- endpoints
+## Próximos pasos
 
-## Base de datos
-
-El esquema Prisma ya contempla:
-
-- usuarios y roles
-- clientes
-- leads e inquiries
-- destinos, hoteles y paquetes
-- cotizaciones e ítems
-- pedidos e ítems
-- pagos y schedules
-- documentos
-- auditoría y activity logs
-
-## Próximas fases sugeridas
-
-### Fase siguiente inmediata
-- Stripe checkout real
-- persistencia de pagos
-- actualización automática de saldo
-
-### Después
-- portal del cliente real sobre DB
-- CRUD real de catálogo
-- documentos y vouchers
-- carga inicial desde Excel
+- CRUD completo de catálogo sobre Prisma
+- publicación real de documentos y vouchers
+- aprobación del cliente para cotizaciones
+- importación de datos desde Excel

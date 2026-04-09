@@ -3,7 +3,7 @@ import { PlaceholderTable } from "@/components/shared/placeholder-table";
 export default function AdminInquiriesPage() {
   return (
     <div className="space-y-6">
-      <h1 className="text-4xl text-white">Inquiries</h1>
+      <h1 className="text-4xl text-slate-950">Solicitudes</h1>
       <PlaceholderTable
         columns={["Canal", "Destino", "Viajeros", "Estado"]}
         rows={[

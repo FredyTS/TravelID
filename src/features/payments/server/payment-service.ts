@@ -6,16 +6,59 @@ import {
   PaymentStatus,
   Prisma,
 } from "@prisma/client";
-import Stripe from "stripe";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
-import { stripe } from "@/lib/stripe/client";
 
-function getAdminOrderUrl(orderId: string) {
-  return `${env.appUrl}/admin/orders/${orderId}`;
+function getAppOrderUrl(orderId: string, audience: "admin" | "client") {
+  return audience === "admin"
+    ? `${env.appUrl}/admin/orders/${orderId}`
+    : `${env.appUrl}/portal/viajes/${orderId}`;
 }
 
-async function recalculateOrderPaymentState(orderId: string) {
+function getMercadoPagoHeaders() {
+  if (!env.mercadoPagoAccessToken) {
+    throw new Error("Mercado Pago no esta configurado.");
+  }
+
+  return {
+    Authorization: `Bearer ${env.mercadoPagoAccessToken}`,
+    "Content-Type": "application/json",
+  };
+}
+
+function mapMercadoPagoStatus(status?: string | null) {
+  switch (status) {
+    case "approved":
+      return PaymentStatus.SUCCEEDED;
+    case "in_process":
+    case "pending":
+      return PaymentStatus.PROCESSING;
+    case "refunded":
+      return PaymentStatus.REFUNDED;
+    case "cancelled":
+      return PaymentStatus.CANCELLED;
+    case "rejected":
+      return PaymentStatus.FAILED;
+    default:
+      return PaymentStatus.PENDING;
+  }
+}
+
+function mapMercadoPagoMethod(paymentTypeId?: string | null) {
+  switch (paymentTypeId) {
+    case "bank_transfer":
+      return PaymentMethod.SPEI;
+    case "ticket":
+      return PaymentMethod.CASH;
+    case "credit_card":
+    case "debit_card":
+      return PaymentMethod.CARD;
+    default:
+      return PaymentMethod.OTHER;
+  }
+}
+
+export async function recalculateOrderPaymentState(orderId: string) {
   const [order, payments, schedules] = await Promise.all([
     prisma.order.findUniqueOrThrow({
       where: { id: orderId },
@@ -35,13 +78,11 @@ async function recalculateOrderPaymentState(orderId: string) {
   ]);
 
   const paidTotal = payments.reduce((acc, payment) => {
-    const amount = Number(payment.amount);
-
     if (payment.status === PaymentStatus.REFUNDED) {
       return acc;
     }
 
-    return acc + amount;
+    return acc + Number(payment.amount);
   }, 0);
 
   const grandTotal = Number(order.grandTotal);
@@ -67,15 +108,7 @@ async function recalculateOrderPaymentState(orderId: string) {
   });
 
   for (const schedule of schedules) {
-    const schedulePayments = await prisma.payment.findMany({
-      where: {
-        paymentScheduleId: schedule.id,
-        status: {
-          in: [PaymentStatus.SUCCEEDED, PaymentStatus.PARTIALLY_REFUNDED, PaymentStatus.REFUNDED],
-        },
-      },
-    });
-
+    const schedulePayments = payments.filter((payment) => payment.paymentScheduleId === schedule.id);
     const scheduledPaid = schedulePayments.reduce((acc, payment) => {
       if (payment.status === PaymentStatus.REFUNDED) {
         return acc;
@@ -84,9 +117,8 @@ async function recalculateOrderPaymentState(orderId: string) {
       return acc + Number(payment.amount);
     }, 0);
 
-    const scheduleAmount = Number(schedule.amount);
     const nextScheduleStatus =
-      scheduledPaid >= scheduleAmount ? PaymentScheduleStatus.PAID : PaymentScheduleStatus.PENDING;
+      scheduledPaid >= Number(schedule.amount) ? PaymentScheduleStatus.PAID : PaymentScheduleStatus.PENDING;
 
     if (schedule.status !== nextScheduleStatus) {
       await prisma.paymentSchedule.update({
@@ -97,14 +129,11 @@ async function recalculateOrderPaymentState(orderId: string) {
   }
 }
 
-export async function createOrderCheckoutSession(input: {
+export async function createPaymentPreference(input: {
   orderId: string;
   scheduleId?: string;
+  audience?: "admin" | "client";
 }) {
-  if (!stripe) {
-    throw new Error("Stripe no esta configurado.");
-  }
-
   const order = await prisma.order.findUnique({
     where: { id: input.orderId },
     include: {
@@ -124,39 +153,66 @@ export async function createOrderCheckoutSession(input: {
     order.paymentSchedules.find((item) => item.id === input.scheduleId) ?? order.paymentSchedules[0];
 
   if (!schedule) {
-    throw new Error("No hay pagos pendientes para este pedido.");
+    throw new Error("No hay cobros pendientes para este pedido.");
   }
 
+  const audience = input.audience ?? "client";
+  const baseUrl = getAppOrderUrl(order.id, audience);
   const amount = Number(schedule.amount);
-  const customerName = [order.customer.firstName, order.customer.lastName].filter(Boolean).join(" ");
+  const fullName = [order.customer.firstName, order.customer.lastName].filter(Boolean).join(" ");
 
-  const session = await stripe.checkout.sessions.create({
-    mode: "payment",
-    customer_email: order.customer.email ?? undefined,
-    success_url: `${getAdminOrderUrl(order.id)}?payment=success`,
-    cancel_url: `${getAdminOrderUrl(order.id)}?payment=cancelled`,
+  const payload = {
+    items: [
+      {
+        id: schedule.id,
+        title: `${order.title} - ${schedule.dueType}`,
+        description: `${order.orderNumber} | ${schedule.dueType}`,
+        quantity: 1,
+        currency_id: order.currency,
+        unit_price: amount,
+      },
+    ],
+    payer: {
+      name: order.customer.firstName ?? "Cliente",
+      surname: order.customer.lastName ?? "",
+      email: order.customer.email ?? undefined,
+    },
+    external_reference: `${order.id}:${schedule.id}`,
+    back_urls: {
+      success: `${baseUrl}?payment=success`,
+      failure: `${baseUrl}?payment=failure`,
+      pending: `${baseUrl}?payment=pending`,
+    },
+    notification_url: `${env.appUrl}/api/payments/mercadopago/webhook`,
+    auto_return: "approved",
     metadata: {
       orderId: order.id,
       paymentScheduleId: schedule.id,
+      orderNumber: order.orderNumber,
+      customerName: fullName,
     },
-    line_items: [
-      {
-        quantity: 1,
-        price_data: {
-          currency: order.currency.toLowerCase(),
-          unit_amount: Math.round(amount * 100),
-          product_data: {
-            name: `${order.title} - ${schedule.dueType}`,
-            description: customerName || order.orderNumber,
-          },
-        },
-      },
-    ],
+  };
+
+  const response = await fetch("https://api.mercadopago.com/checkout/preferences", {
+    method: "POST",
+    headers: getMercadoPagoHeaders(),
+    body: JSON.stringify(payload),
   });
+
+  const result = (await response.json()) as {
+    id?: string;
+    init_point?: string;
+    sandbox_init_point?: string;
+    [key: string]: unknown;
+  };
+
+  if (!response.ok || !result.id || !(result.init_point || result.sandbox_init_point)) {
+    throw new Error("No fue posible crear la preferencia de pago en Mercado Pago.");
+  }
 
   await prisma.payment.upsert({
     where: {
-      providerCheckoutSessionId: session.id,
+      providerCheckoutSessionId: result.id,
     },
     update: {
       amount,
@@ -164,97 +220,142 @@ export async function createOrderCheckoutSession(input: {
       orderId: order.id,
       paymentScheduleId: schedule.id,
       quoteId: order.quoteId,
-      provider: PaymentProvider.STRIPE,
+      provider: PaymentProvider.MERCADO_PAGO,
       status: PaymentStatus.PENDING,
-      method: PaymentMethod.CARD,
-      rawResponse: session as unknown as Prisma.JsonObject,
+      method: PaymentMethod.OTHER,
+      rawResponse: result as Prisma.JsonObject,
     },
     create: {
       orderId: order.id,
       paymentScheduleId: schedule.id,
       quoteId: order.quoteId,
-      provider: PaymentProvider.STRIPE,
-      providerCheckoutSessionId: session.id,
-      providerPaymentIntentId:
-        typeof session.payment_intent === "string" ? session.payment_intent : undefined,
+      provider: PaymentProvider.MERCADO_PAGO,
+      providerCheckoutSessionId: result.id,
       amount,
       currency: order.currency,
       status: PaymentStatus.PENDING,
-      method: PaymentMethod.CARD,
-      rawResponse: session as unknown as Prisma.JsonObject,
+      method: PaymentMethod.OTHER,
+      rawResponse: result as Prisma.JsonObject,
     },
   });
 
   await prisma.activityLog.create({
     data: {
       entityType: "Payment",
-      entityId: session.id,
-      action: "CHECKOUT_CREATED",
-      description: `Checkout creado para ${order.orderNumber}.`,
-      actorType: "USER",
+      entityId: result.id,
+      action: "PAYMENT_LINK_CREATED",
+      description: `Link de cobro creado en Mercado Pago para ${order.orderNumber}.`,
+      actorType: "SYSTEM",
       metadata: {
         orderId: order.id,
         paymentScheduleId: schedule.id,
-        checkoutSessionId: session.id,
+        audience,
       },
     },
   });
 
-  return session;
+  return {
+    id: result.id,
+    url: result.init_point ?? result.sandbox_init_point ?? "",
+  };
 }
 
-export async function handleCheckoutCompleted(session: Stripe.Checkout.Session) {
-  const orderId = session.metadata?.orderId;
-  const paymentScheduleId = session.metadata?.paymentScheduleId;
+async function fetchMercadoPagoPayment(paymentId: string) {
+  const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    headers: getMercadoPagoHeaders(),
+  });
 
-  if (!orderId || !paymentScheduleId) {
-    throw new Error("El checkout no contiene metadatos suficientes.");
+  if (!response.ok) {
+    throw new Error("No fue posible consultar el pago en Mercado Pago.");
   }
 
-  const amountTotal = session.amount_total ? session.amount_total / 100 : 0;
+  return (await response.json()) as {
+    id: number | string;
+    status?: string;
+    payment_type_id?: string;
+    date_approved?: string;
+    transaction_amount?: number;
+    currency_id?: string;
+    external_reference?: string;
+    order?: { id?: string | null };
+    metadata?: {
+      orderId?: string;
+      paymentScheduleId?: string;
+      [key: string]: unknown;
+    };
+    [key: string]: unknown;
+  };
+}
+
+export async function handleMercadoPagoWebhook(payload: Record<string, unknown>) {
+  const paymentId =
+    (payload.data as { id?: string | number } | undefined)?.id ??
+    (typeof payload.resource === "string" ? payload.resource.split("/").pop() : undefined);
+
+  if (!paymentId) {
+    return { ignored: true };
+  }
+
+  const paymentDetails = await fetchMercadoPagoPayment(String(paymentId));
+  const externalReference = paymentDetails.external_reference ?? "";
+  const [orderId, paymentScheduleId] = externalReference.split(":");
+  const resolvedOrderId = paymentDetails.metadata?.orderId ?? orderId;
+  const resolvedScheduleId = paymentDetails.metadata?.paymentScheduleId ?? paymentScheduleId;
+
+  if (!resolvedOrderId) {
+    throw new Error("El pago de Mercado Pago no contiene orderId.");
+  }
+
+  const status = mapMercadoPagoStatus(paymentDetails.status);
 
   await prisma.payment.upsert({
     where: {
-      providerCheckoutSessionId: session.id,
+      providerPaymentIntentId: String(paymentDetails.id),
     },
     update: {
-      providerPaymentIntentId:
-        typeof session.payment_intent === "string" ? session.payment_intent : undefined,
-      status: PaymentStatus.SUCCEEDED,
-      method: PaymentMethod.CARD,
-      paidAt: new Date(),
-      amount: amountTotal,
-      rawResponse: session as unknown as Prisma.JsonObject,
+      orderId: resolvedOrderId,
+      paymentScheduleId: resolvedScheduleId || undefined,
+      provider: PaymentProvider.MERCADO_PAGO,
+      status,
+      method: mapMercadoPagoMethod(paymentDetails.payment_type_id),
+      amount: paymentDetails.transaction_amount ?? 0,
+      currency: paymentDetails.currency_id ?? "MXN",
+      paidAt: paymentDetails.date_approved ? new Date(paymentDetails.date_approved) : undefined,
+      rawResponse: paymentDetails as Prisma.JsonObject,
     },
     create: {
-      orderId,
-      paymentScheduleId,
-      provider: PaymentProvider.STRIPE,
-      providerCheckoutSessionId: session.id,
-      providerPaymentIntentId:
-        typeof session.payment_intent === "string" ? session.payment_intent : undefined,
-      amount: amountTotal,
-      currency: (session.currency ?? "mxn").toUpperCase(),
-      status: PaymentStatus.SUCCEEDED,
-      method: PaymentMethod.CARD,
-      paidAt: new Date(),
-      rawResponse: session as unknown as Prisma.JsonObject,
+      orderId: resolvedOrderId,
+      paymentScheduleId: resolvedScheduleId || undefined,
+      provider: PaymentProvider.MERCADO_PAGO,
+      providerPaymentIntentId: String(paymentDetails.id),
+      amount: paymentDetails.transaction_amount ?? 0,
+      currency: paymentDetails.currency_id ?? "MXN",
+      status,
+      method: mapMercadoPagoMethod(paymentDetails.payment_type_id),
+      paidAt: paymentDetails.date_approved ? new Date(paymentDetails.date_approved) : undefined,
+      rawResponse: paymentDetails as Prisma.JsonObject,
     },
   });
 
   await prisma.activityLog.create({
     data: {
       entityType: "Order",
-      entityId: orderId,
-      action: "PAYMENT_SUCCEEDED",
-      description: `Pago Stripe confirmado para el pedido ${orderId}.`,
+      entityId: resolvedOrderId,
+      action: "PAYMENT_STATUS_UPDATED",
+      description: `Mercado Pago actualizo el cobro a ${paymentDetails.status ?? "pending"}.`,
       actorType: "SYSTEM",
       metadata: {
-        checkoutSessionId: session.id,
-        paymentScheduleId,
+        paymentId: String(paymentDetails.id),
+        paymentScheduleId: resolvedScheduleId,
       },
     },
   });
 
-  await recalculateOrderPaymentState(orderId);
+  await recalculateOrderPaymentState(resolvedOrderId);
+
+  return {
+    ok: true,
+    orderId: resolvedOrderId,
+    paymentId: String(paymentDetails.id),
+  };
 }

@@ -5,15 +5,16 @@ import { isAdminRole } from "@/lib/permissions/policies";
 
 const adminNav = [
   { href: "/admin", label: "Resumen" },
+  { href: "/admin/conversations", label: "Conversaciones" },
   { href: "/admin/leads", label: "Leads" },
-  { href: "/admin/inquiries", label: "Inquiries" },
+  { href: "/admin/inquiries", label: "Solicitudes" },
   { href: "/admin/customers", label: "Clientes" },
   { href: "/admin/quotes", label: "Cotizaciones" },
   { href: "/admin/orders", label: "Pedidos" },
   { href: "/admin/payments", label: "Pagos" },
   { href: "/admin/packages", label: "Catalogo" },
   { href: "/admin/activity", label: "Actividad" },
-  { href: "/admin/settings", label: "Settings" },
+  { href: "/admin/settings", label: "Configuracion" },
 ];
 
 export const dynamic = "force-dynamic";
@@ -28,8 +29,8 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   return (
     <DashboardShell
       nav={adminNav}
-      title="Panel de administracion"
-      subtitle="Control central de catalogo, cotizaciones, pedidos, pagos y documentos."
+      title="Panel admin"
+      subtitle="Ventas, clientes, pedidos, conversaciones, documentos y cobranza desde un solo lugar."
     >
       {children}
     </DashboardShell>

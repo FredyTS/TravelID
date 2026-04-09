@@ -8,10 +8,12 @@ export function CreateCheckoutButton({
   orderId,
   scheduleId,
   label,
+  audience = "client",
 }: {
   orderId: string;
   scheduleId?: string;
   label?: string;
+  audience?: "admin" | "client";
 }) {
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -23,7 +25,7 @@ export function CreateCheckoutButton({
       const response = await fetch(`/api/orders/${orderId}/checkout`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ scheduleId }),
+        body: JSON.stringify({ scheduleId, audience }),
       });
 
       const result = await response.json();
@@ -46,7 +48,7 @@ export function CreateCheckoutButton({
             Redirigiendo...
           </>
         ) : (
-          label ?? "Pagar con Stripe"
+          label ?? "Pagar con Mercado Pago"
         )}
       </Button>
       {error ? <p className="text-sm text-amber-300">{error}</p> : null}

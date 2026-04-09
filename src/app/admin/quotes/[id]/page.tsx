@@ -32,8 +32,8 @@ export default async function AdminQuoteDetailPage({
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl text-white">Cotizacion {quote.quoteNumber}</h1>
-          <p className="mt-2 text-slate-300">
+          <h1 className="text-4xl text-slate-950">Cotizacion {quote.quoteNumber}</h1>
+          <p className="mt-2 text-slate-600">
             {quote.customer
               ? `Cliente: ${[quote.customer.firstName, quote.customer.lastName].filter(Boolean).join(" ")}`
               : "Cotizacion sin cliente asociado"}
@@ -43,28 +43,28 @@ export default async function AdminQuoteDetailPage({
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
-        <Card className="border-white/10 bg-white/5 text-white shadow-none">
+        <Card className="rounded-[2rem] border-slate-200 bg-white">
           <CardHeader>
             <CardTitle>Desglose comercial</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-hidden rounded-3xl border border-white/10">
+            <div className="overflow-hidden rounded-3xl border border-slate-200">
               <Table>
                 <TableHeader>
-                  <TableRow className="border-white/10">
-                    <TableHead className="text-slate-300">Concepto</TableHead>
-                    <TableHead className="text-slate-300">Cant.</TableHead>
-                    <TableHead className="text-slate-300">Unitario</TableHead>
-                    <TableHead className="text-slate-300">Total</TableHead>
+                  <TableRow className="border-slate-200">
+                    <TableHead className="text-slate-500">Concepto</TableHead>
+                    <TableHead className="text-slate-500">Cant.</TableHead>
+                    <TableHead className="text-slate-500">Unitario</TableHead>
+                    <TableHead className="text-slate-500">Total</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {quote.items.map((item) => (
-                    <TableRow key={item.id} className="border-white/10">
-                      <TableCell className="text-slate-100">{item.title}</TableCell>
-                      <TableCell className="text-slate-100">{item.quantity}</TableCell>
-                      <TableCell className="text-slate-100">{formatCurrency(Number(item.unitPrice))}</TableCell>
-                      <TableCell className="text-slate-100">{formatCurrency(Number(item.lineTotal))}</TableCell>
+                    <TableRow key={item.id} className="border-slate-200">
+                      <TableCell className="text-slate-700">{item.title}</TableCell>
+                      <TableCell className="text-slate-700">{item.quantity}</TableCell>
+                      <TableCell className="text-slate-700">{formatCurrency(Number(item.unitPrice))}</TableCell>
+                      <TableCell className="text-slate-700">{formatCurrency(Number(item.lineTotal))}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -74,41 +74,41 @@ export default async function AdminQuoteDetailPage({
         </Card>
 
         <div className="space-y-6">
-          <Card className="border-white/10 bg-white/5 text-white shadow-none">
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
             <CardHeader>
               <CardTitle>Estado y aprobacion</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 text-sm text-slate-300">
+            <CardContent className="space-y-4 text-sm text-slate-600">
               <div className="flex items-center justify-between">
                 <span>Estado</span>
-                <span className="font-medium text-white">{quote.status}</span>
+                <span className="font-medium text-slate-950">{quote.status}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Vigencia</span>
-                <span className="font-medium text-white">
+                <span className="font-medium text-slate-950">
                   {quote.validUntil ? quote.validUntil.toLocaleDateString("es-MX") : "Sin fecha"}
                 </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Total</span>
-                <span className="font-medium text-white">{formatCurrency(Number(quote.grandTotal))}</span>
+                <span className="font-medium text-slate-950">{formatCurrency(Number(quote.grandTotal))}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Anticipo</span>
-                <span className="font-medium text-white">{formatCurrency(Number(quote.depositRequired))}</span>
+                <span className="font-medium text-slate-950">{formatCurrency(Number(quote.depositRequired))}</span>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-white/10 bg-white/5 text-white shadow-none">
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
             <CardHeader>
               <CardTitle>Siguientes acciones</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-3 text-sm text-slate-300">
+            <CardContent className="space-y-3 text-sm text-slate-600">
               {quote.convertedOrder ? (
                 <>
                   <p>Esta cotizacion ya fue convertida a pedido.</p>
-                  <Link href={`/admin/orders/${quote.convertedOrder.id}`} className="font-medium text-cyan-300">
+                  <Link href={`/admin/orders/${quote.convertedOrder.id}`} className="font-medium text-primary">
                     Abrir pedido {quote.convertedOrder.orderNumber}
                   </Link>
                 </>

@@ -1,13 +1,16 @@
 # Setup local
 
-## Variables
+## Variables mínimas
 
 1. Copia `.env.example` a `.env`
 2. Configura al menos:
    - `DATABASE_URL`
+   - `NEXTAUTH_URL`
    - `NEXTAUTH_SECRET`
    - `SEED_SUPERADMIN_EMAIL`
    - `SEED_SUPERADMIN_PASSWORD`
+   - `MERCADO_PAGO_ACCESS_TOKEN`
+   - `RESEND_API_KEY` si quieres magic links reales por correo
 
 ## Comandos
 
@@ -19,14 +22,18 @@ npm run db:seed
 npm run dev
 ```
 
-## Credenciales seed
+## Credenciales seed del admin
 
 - Email: `admin@alondratravelmx.com`
 - Password: `ChangeMe123!`
 
-## Pendientes de integracion
+## Flujo de acceso
 
-- Conectar login UI a `signIn`
-- Conectar Stripe checkout session
-- Generar URLs firmadas reales para R2/S3
-- Agregar importadores desde Excel
+- Admin: entra por credenciales en `/login`
+- Cliente: entra con su email y recibe magic link
+
+## Notas
+
+- Si `RESEND_API_KEY` no está configurado, los correos se simulan en consola.
+- Si `MERCADO_PAGO_ACCESS_TOKEN` no está configurado, la creación de links de pago fallará.
+- Después de cambiar `prisma/schema.prisma`, vuelve a correr `npm run db:generate` y `npm run db:push`.

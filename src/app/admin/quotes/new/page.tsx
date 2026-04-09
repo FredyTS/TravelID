@@ -11,13 +11,13 @@ export default function NewQuotePage() {
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl text-white">Nueva cotizacion</h1>
-          <p className="mt-2 max-w-3xl text-slate-300">
+          <h1 className="text-4xl text-slate-950">Nueva cotizacion</h1>
+          <p className="mt-2 max-w-3xl text-slate-600">
             Flujo base para crear una propuesta desde catalogo o de forma manual y convertirla despues en pedido.
           </p>
         </div>
         <div className="flex gap-3">
-          <Button variant="outline" className="border-white/15 bg-transparent text-white hover:bg-white/10">
+          <Button variant="outline">
             Guardar borrador
           </Button>
           <Button>Enviar propuesta</Button>
@@ -26,7 +26,7 @@ export default function NewQuotePage() {
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <div className="space-y-6">
-          <Card className="border-white/10 bg-white/5 text-white shadow-none">
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
             <CardHeader>
               <CardTitle>Resumen comercial</CardTitle>
             </CardHeader>
@@ -35,26 +35,26 @@ export default function NewQuotePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-white/10 bg-white/5 text-white shadow-none">
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
             <CardHeader>
               <CardTitle>Conceptos de la propuesta</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="overflow-hidden rounded-3xl border border-white/10">
+              <div className="overflow-hidden rounded-3xl border border-slate-200">
                 <Table>
                   <TableHeader>
-                    <TableRow className="border-white/10">
-                      <TableHead className="text-slate-300">Concepto</TableHead>
-                      <TableHead className="text-slate-300">Cant.</TableHead>
-                      <TableHead className="text-slate-300">Unitario</TableHead>
-                      <TableHead className="text-slate-300">Total</TableHead>
+                    <TableRow className="border-slate-200">
+                      <TableHead className="text-slate-500">Concepto</TableHead>
+                      <TableHead className="text-slate-500">Cant.</TableHead>
+                      <TableHead className="text-slate-500">Unitario</TableHead>
+                      <TableHead className="text-slate-500">Total</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {quoteLineItems.map((item) => (
-                      <TableRow key={item[0]} className="border-white/10">
+                      <TableRow key={item[0]} className="border-slate-200">
                         {item.map((cell) => (
-                          <TableCell key={cell} className="text-slate-100">
+                          <TableCell key={cell} className="text-slate-700">
                             {cell}
                           </TableCell>
                         ))}
@@ -69,7 +69,7 @@ export default function NewQuotePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-white/10 bg-white/5 text-white shadow-none">
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
             <CardHeader>
               <CardTitle>Notas visibles al cliente</CardTitle>
             </CardHeader>
@@ -83,46 +83,46 @@ export default function NewQuotePage() {
         </div>
 
         <div className="space-y-6">
-          <Card className="border-white/10 bg-white/5 text-white shadow-none">
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
             <CardHeader>
               <CardTitle>Checklist de armado</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               {quoteBuilderSections.map((section, index) => (
-                <div key={section.title} className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                <div key={section.title} className="rounded-3xl border border-slate-200 bg-slate-50 p-4">
                   <div className="flex items-center justify-between gap-3">
-                    <h3 className="text-lg text-white">{section.title}</h3>
-                    <Badge className="bg-white/10 text-white hover:bg-white/10">Paso {index + 1}</Badge>
+                    <h3 className="text-lg text-slate-950">{section.title}</h3>
+                    <Badge className="bg-slate-100 text-slate-700 hover:bg-slate-100">Paso {index + 1}</Badge>
                   </div>
-                  <p className="mt-2 text-sm text-slate-300">{section.description}</p>
+                  <p className="mt-2 text-sm text-slate-600">{section.description}</p>
                 </div>
               ))}
             </CardContent>
           </Card>
 
-          <Card className="border-white/10 bg-white/5 text-white shadow-none">
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
             <CardHeader>
               <CardTitle>Resumen financiero</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm">
               <div className="flex items-center justify-between">
-                <span className="text-slate-300">Subtotal</span>
+                <span className="text-slate-500">Subtotal</span>
                 <span>$11,040 MXN</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-300">Descuento</span>
+                <span className="text-slate-500">Descuento</span>
                 <span>-$1,050 MXN</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-300">Total</span>
+                <span className="text-slate-500">Total</span>
                 <span className="text-xl font-semibold">$9,990 MXN</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-300">Anticipo sugerido</span>
+                <span className="text-slate-500">Anticipo sugerido</span>
                 <span>$3,500 MXN</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-slate-300">Vigencia</span>
+                <span className="text-slate-500">Vigencia</span>
                 <span>72 horas</span>
               </div>
             </CardContent>
