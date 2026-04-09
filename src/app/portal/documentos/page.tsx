@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { requireCustomerSession } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/prisma";
 
@@ -31,6 +32,9 @@ export default async function PortalDocumentsPage() {
               <p className="mt-3 text-xs text-slate-400">
                 Carga publicada el {document.createdAt.toLocaleDateString("es-MX")}
               </p>
+              <Link href={`/api/documents/${document.id}/download`} className="mt-4 inline-block text-sm font-medium text-primary">
+                Descargar documento
+              </Link>
             </div>
           ))
         ) : (

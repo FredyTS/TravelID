@@ -26,6 +26,10 @@ export default async function PortalQuoteDetailPage({
       items: {
         orderBy: { sortOrder: "asc" },
       },
+      documents: {
+        where: { visibility: "CLIENT" },
+        orderBy: { createdAt: "desc" },
+      },
     },
   });
 
@@ -51,6 +55,25 @@ export default async function PortalQuoteDetailPage({
             <Link href={`/api/quotes/${quote.id}/proposal`} target="_blank" className="text-sm font-medium text-primary hover:underline">
               Abrir propuesta completa
             </Link>
+            <Link href={`/api/quotes/${quote.id}/proposal-pdf`} target="_blank" className="text-sm font-medium text-primary hover:underline">
+              Abrir PDF
+            </Link>
+          </div>
+        </div>
+      ) : null}
+      {quote.documents.length > 0 ? (
+        <div className="rounded-[1.5rem] border border-slate-200 bg-white p-4">
+          <p className="font-medium text-slate-950">Documentos publicados</p>
+          <div className="mt-3 grid gap-3">
+            {quote.documents.map((document) => (
+              <Link
+                key={document.id}
+                href={`/api/documents/${document.id}/download`}
+                className="rounded-[1rem] border border-slate-200 px-4 py-3 text-sm text-slate-700 transition hover:border-slate-300 hover:bg-slate-50"
+              >
+                {document.name}
+              </Link>
+            ))}
           </div>
         </div>
       ) : null}
