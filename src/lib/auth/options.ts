@@ -1,4 +1,5 @@
 import { PrismaAdapter } from "@auth/prisma-adapter";
+import type { Adapter } from "next-auth/adapters";
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import EmailProvider from "next-auth/providers/email";
@@ -18,8 +19,59 @@ async function getUserPrimaryRole(userId: string) {
   return userRole?.role.key ?? null;
 }
 
+function splitUserName(name?: string | null) {
+  const fallback = {
+    firstName: "Cliente",
+    lastName: "Portal",
+  };
+
+  if (!name?.trim()) {
+    return fallback;
+  }
+
+  const [firstName, ...rest] = name.trim().split(/\s+/);
+
+  return {
+    firstName: firstName || fallback.firstName,
+    lastName: rest.join(" ") || fallback.lastName,
+  };
+}
+
+const prismaAdapter = PrismaAdapter(prisma);
+
+const authAdapter: Adapter = {
+  ...prismaAdapter,
+  async createUser(data: Parameters<NonNullable<Adapter["createUser"]>>[0]) {
+    const normalizedEmail = data.email?.toLowerCase();
+
+    if (!normalizedEmail) {
+      throw new Error("El usuario de acceso por email requiere un correo valido.");
+    }
+
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail },
+    });
+
+    if (existingUser) {
+      return existingUser;
+    }
+
+    const { firstName, lastName } = splitUserName(data.name);
+
+    return prisma.user.create({
+      data: {
+        email: normalizedEmail,
+        emailVerified: data.emailVerified,
+        image: data.image,
+        firstName,
+        lastName,
+      },
+    });
+  },
+};
+
 export const authOptions: NextAuthOptions = {
-  adapter: PrismaAdapter(prisma),
+  adapter: authAdapter,
   session: {
     strategy: "jwt",
   },
