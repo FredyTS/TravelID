@@ -7,8 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ConvertQuoteButton } from "@/features/quotes/components/convert-quote-button";
 import { RegisterQuoteProposalButton } from "@/features/documents/components/register-quote-proposal-button";
+import { ShareLinkPanel } from "@/features/sharing/components/share-link-panel";
 
 export const dynamic = "force-dynamic";
+
+function formatDate(value?: Date | null) {
+  return value ? value.toLocaleDateString("es-MX") : "Pendiente";
+}
+
+function getMetadataString(metadata: unknown, key: string) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const value = (metadata as Record<string, unknown>)[key];
+  return typeof value === "string" && value.trim() ? value : null;
+}
 
 export default async function AdminQuoteDetailPage({
   params,
@@ -19,7 +33,11 @@ export default async function AdminQuoteDetailPage({
   const quote = await prisma.quote.findUnique({
     where: { id },
     include: {
-      customer: true,
+      customer: {
+        include: {
+          user: true,
+        },
+      },
       items: true,
       convertedOrder: true,
       documents: true,
@@ -30,16 +48,35 @@ export default async function AdminQuoteDetailPage({
     notFound();
   }
 
+  const latestShareLog = await prisma.activityLog.findFirst({
+    where: {
+      entityType: "QUOTE",
+      entityId: quote.id,
+      action: "QUOTE_LINK_SENT",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  const customerName =
+    [quote.customer?.firstName, quote.customer?.lastName].filter(Boolean).join(" ") ||
+    quote.customer?.companyName ||
+    "Cotizacion sin cliente asociado";
+
+  const preferredEmail =
+    getMetadataString(latestShareLog?.metadata, "recipientEmail") ??
+    quote.customer?.email ??
+    quote.customer?.user?.email ??
+    null;
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h1 className="text-4xl text-slate-950">Cotizacion {quote.quoteNumber}</h1>
-          <p className="mt-2 text-slate-600">
-            {quote.customer
-              ? `Cliente: ${[quote.customer.firstName, quote.customer.lastName].filter(Boolean).join(" ")}`
-              : "Cotizacion sin cliente asociado"}
-          </p>
+          <p className="mt-2 text-slate-600">{customerName}</p>
+          {preferredEmail ? <p className="mt-1 text-sm text-slate-500">{preferredEmail}</p> : null}
         </div>
         <div className="flex items-center gap-3">
           {quote.proposalHtml ? (
@@ -98,6 +135,56 @@ export default async function AdminQuoteDetailPage({
         <div className="space-y-6">
           <Card className="rounded-[2rem] border-slate-200 bg-white">
             <CardHeader>
+              <CardTitle>Persona y entrega</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-slate-600">
+              <div className="grid gap-4 rounded-[1.5rem] bg-slate-50 p-4 md:grid-cols-2">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Cliente</p>
+                  <p className="mt-2 font-medium text-slate-950">{customerName}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Correo principal</p>
+                  <p className="mt-2 font-medium text-slate-950">{preferredEmail ?? "Sin correo"}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Telefono</p>
+                  <p className="mt-2 font-medium text-slate-950">{quote.customer?.phone ?? "Sin telefono"}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">WhatsApp</p>
+                  <p className="mt-2 font-medium text-slate-950">{quote.customer?.whatsapp ?? "Sin WhatsApp"}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Usuario portal</p>
+                  <p className="mt-2 font-medium text-slate-950">
+                    {quote.customer?.user?.email ?? "Aun no vinculado"}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Ultimo envio</p>
+                  <p className="mt-2 font-medium text-slate-950">{formatDate(latestShareLog?.createdAt ?? quote.sentAt)}</p>
+                </div>
+              </div>
+
+              <div className="space-y-2 rounded-[1.5rem] border border-slate-200 p-4">
+                <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Ultimo destinatario del link</p>
+                <p className="font-medium text-slate-950">{preferredEmail ?? "Todavia no se ha enviado un link"}</p>
+                {getMetadataString(latestShareLog?.metadata, "shareUrl") ? (
+                  <Link
+                    href={getMetadataString(latestShareLog?.metadata, "shareUrl")!}
+                    target="_blank"
+                    className="text-sm font-medium text-primary hover:underline"
+                  >
+                    Abrir ultimo link compartido
+                  </Link>
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
+            <CardHeader>
               <CardTitle>Estado y aprobacion</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 text-sm text-slate-600">
@@ -107,15 +194,11 @@ export default async function AdminQuoteDetailPage({
               </div>
               <div className="flex items-center justify-between">
                 <span>Vista en portal</span>
-                <span className="font-medium text-slate-950">
-                  {quote.viewedAt ? quote.viewedAt.toLocaleDateString("es-MX") : "Pendiente"}
-                </span>
+                <span className="font-medium text-slate-950">{formatDate(quote.viewedAt)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Aprobada por cliente</span>
-                <span className="font-medium text-slate-950">
-                  {quote.approvedAt ? quote.approvedAt.toLocaleDateString("es-MX") : "Pendiente"}
-                </span>
+                <span className="font-medium text-slate-950">{formatDate(quote.approvedAt)}</span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Vigencia</span>
@@ -131,6 +214,24 @@ export default async function AdminQuoteDetailPage({
                 <span>Anticipo</span>
                 <span className="font-medium text-slate-950">{formatCurrency(Number(quote.depositRequired))}</span>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
+            <CardHeader>
+              <CardTitle>Envio y seguimiento</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-slate-600">
+              <ShareLinkPanel
+                endpoint={`/api/admin/quotes/${quote.id}/share`}
+                defaultEmail={preferredEmail}
+                shareLabel="Mandar link por correo"
+                copyLabel="Copiar link manual"
+              />
+              <p>
+                Puedes mandar este link al cliente para que revise la cotizacion, abra la propuesta y continue en su
+                portal cuando lo necesite.
+              </p>
             </CardContent>
           </Card>
 

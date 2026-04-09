@@ -6,12 +6,26 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateCheckoutButton } from "@/features/payments/components/create-checkout-button";
 import { MessageComposer } from "@/features/communications/components/message-composer";
+import { ShareLinkPanel } from "@/features/sharing/components/share-link-panel";
 import {
   ensureConversationThread,
   getAdminThread,
 } from "@/features/communications/server/communications-service";
 
 export const dynamic = "force-dynamic";
+
+function formatDate(value?: Date | null) {
+  return value ? value.toLocaleDateString("es-MX") : "Pendiente";
+}
+
+function getMetadataString(metadata: unknown, key: string) {
+  if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
+    return null;
+  }
+
+  const value = (metadata as Record<string, unknown>)[key];
+  return typeof value === "string" && value.trim() ? value : null;
+}
 
 export default async function AdminOrderDetailPage({
   params,
@@ -22,7 +36,11 @@ export default async function AdminOrderDetailPage({
   const order = await prisma.order.findUnique({
     where: { id },
     include: {
-      customer: true,
+      customer: {
+        include: {
+          user: true,
+        },
+      },
       items: true,
       paymentSchedules: {
         orderBy: { dueDate: "asc" },
@@ -51,6 +69,27 @@ export default async function AdminOrderDetailPage({
   });
   const thread = await getAdminThread(ensuredThread.id);
 
+  const latestShareLog = await prisma.activityLog.findFirst({
+    where: {
+      entityType: "ORDER",
+      entityId: order.id,
+      action: "ORDER_LINK_SENT",
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
+
+  const customerName =
+    [order.customer.firstName, order.customer.lastName].filter(Boolean).join(" ") ||
+    order.customer.companyName ||
+    "Sin cliente";
+  const preferredEmail =
+    getMetadataString(latestShareLog?.metadata, "recipientEmail") ??
+    order.customer.email ??
+    order.customer.user?.email ??
+    null;
+
   return (
     <div className="space-y-6">
       <div className="surface p-8">
@@ -58,9 +97,8 @@ export default async function AdminOrderDetailPage({
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-teal-700">Centro operativo</p>
             <h1 className="mt-3 text-4xl">Pedido {order.orderNumber}</h1>
-            <p className="mt-2 text-slate-600">
-              Cliente: {[order.customer.firstName, order.customer.lastName].filter(Boolean).join(" ") || "Sin cliente"}
-            </p>
+            <p className="mt-2 text-slate-600">{customerName}</p>
+            {preferredEmail ? <p className="mt-1 text-sm text-slate-500">{preferredEmail}</p> : null}
           </div>
           <div className="flex flex-wrap gap-2">
             <Badge className="rounded-full bg-emerald-100 text-emerald-800 hover:bg-emerald-100">{order.status}</Badge>
@@ -160,6 +198,51 @@ export default async function AdminOrderDetailPage({
         </div>
 
         <div className="space-y-6">
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
+            <CardHeader>
+              <CardTitle>Cliente y seguimiento</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4 text-sm text-slate-600">
+              <div className="grid gap-4 rounded-[1.5rem] bg-slate-50 p-4 md:grid-cols-2">
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Cliente</p>
+                  <p className="mt-2 font-medium text-slate-950">{customerName}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Correo principal</p>
+                  <p className="mt-2 font-medium text-slate-950">{preferredEmail ?? "Sin correo"}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Telefono</p>
+                  <p className="mt-2 font-medium text-slate-950">{order.customer.phone ?? "Sin telefono"}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">WhatsApp</p>
+                  <p className="mt-2 font-medium text-slate-950">{order.customer.whatsapp ?? "Sin WhatsApp"}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Usuario portal</p>
+                  <p className="mt-2 font-medium text-slate-950">{order.customer.user?.email ?? "Aun no vinculado"}</p>
+                </div>
+                <div>
+                  <p className="text-xs uppercase tracking-[0.2em] text-slate-400">Ultimo envio</p>
+                  <p className="mt-2 font-medium text-slate-950">{formatDate(latestShareLog?.createdAt)}</p>
+                </div>
+              </div>
+
+              <ShareLinkPanel
+                endpoint={`/api/admin/orders/${order.id}/share`}
+                defaultEmail={preferredEmail}
+                shareLabel="Mandar link por correo"
+                copyLabel="Copiar link manual"
+              />
+              <p>
+                Este link permite que el cliente consulte su pedido, pagos, documentos y seguimiento aunque tambien
+                pueda entrar despues desde su portal.
+              </p>
+            </CardContent>
+          </Card>
+
           <Card className="rounded-[2rem] border-slate-200 bg-white">
             <CardHeader>
               <CardTitle>Calendario de cobro</CardTitle>

@@ -3,6 +3,11 @@ export const env = {
   nextAuthSecret: process.env.NEXTAUTH_SECRET ?? "dev-secret",
   databaseUrl: process.env.DATABASE_URL,
   resendApiKey: process.env.RESEND_API_KEY,
+  mailchimpTransactionalApiKey: process.env.MAILCHIMP_TRANSACTIONAL_API_KEY,
+  mailchimpTransactionalFromEmail:
+    process.env.MAILCHIMP_TRANSACTIONAL_FROM_EMAIL ?? "noreply@alondratravelmx.com",
+  mailchimpTransactionalFromName:
+    process.env.MAILCHIMP_TRANSACTIONAL_FROM_NAME ?? "Alondra Travel MX",
   emailFrom: process.env.EMAIL_FROM ?? "Alondra Travel MX <noreply@alondratravelmx.com>",
   mercadoPagoAccessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
   mercadoPagoPublicKey: process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY,

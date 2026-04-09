@@ -13,6 +13,17 @@ type QuoteWithProposal = Prisma.QuoteGetPayload<{
   };
 }>;
 
+type PdfTheme = {
+  primary: ReturnType<typeof rgb>;
+  primarySoft: ReturnType<typeof rgb>;
+  slate: ReturnType<typeof rgb>;
+  muted: ReturnType<typeof rgb>;
+  border: ReturnType<typeof rgb>;
+  white: ReturnType<typeof rgb>;
+  success: ReturnType<typeof rgb>;
+  warning: ReturnType<typeof rgb>;
+};
+
 function formatDate(value?: Date | string | null) {
   if (!value) {
     return "Por definir";
@@ -144,7 +155,7 @@ function drawWrappedText(
     lines.push(currentLine);
   }
 
-  const lineHeight = options.lineHeight ?? options.size * 1.45;
+  const lineHeight = options.lineHeight ?? options.size * 1.42;
   let currentY = options.y;
 
   for (const line of lines) {
@@ -161,6 +172,119 @@ function drawWrappedText(
   return currentY;
 }
 
+function drawRoundedCard(
+  page: PDFPage,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  fill: ReturnType<typeof rgb>,
+  border: ReturnType<typeof rgb>,
+) {
+  page.drawRectangle({
+    x,
+    y,
+    width,
+    height,
+    color: fill,
+    borderColor: border,
+    borderWidth: 1,
+  });
+}
+
+function drawMetricCard(
+  page: PDFPage,
+  x: number,
+  y: number,
+  width: number,
+  label: string,
+  value: string,
+  fonts: { regular: PDFFont; bold: PDFFont },
+  theme: PdfTheme,
+) {
+  drawRoundedCard(page, x, y - 56, width, 56, theme.white, theme.border);
+  page.drawText(label, {
+    x: x + 14,
+    y: y - 18,
+    size: 9,
+    font: fonts.regular,
+    color: theme.muted,
+  });
+  page.drawText(value, {
+    x: x + 14,
+    y: y - 38,
+    size: 14,
+    font: fonts.bold,
+    color: theme.slate,
+  });
+}
+
+function drawDetailRow(
+  page: PDFPage,
+  label: string,
+  value: string,
+  x: number,
+  y: number,
+  width: number,
+  fonts: { regular: PDFFont; bold: PDFFont },
+  theme: PdfTheme,
+) {
+  page.drawText(label, {
+    x,
+    y,
+    size: 9,
+    font: fonts.bold,
+    color: theme.muted,
+  });
+
+  return drawWrappedText(page, value, {
+    x: x + 114,
+    y,
+    maxWidth: width - 114,
+    font: fonts.regular,
+    size: 10,
+    color: theme.slate,
+    lineHeight: 13,
+  });
+}
+
+function drawSectionTitle(
+  page: PDFPage,
+  title: string,
+  subtitle: string | null,
+  x: number,
+  y: number,
+  width: number,
+  fonts: { regular: PDFFont; bold: PDFFont },
+  theme: PdfTheme,
+) {
+  page.drawText(title, {
+    x,
+    y,
+    size: 15,
+    font: fonts.bold,
+    color: theme.slate,
+  });
+
+  if (subtitle) {
+    page.drawText(subtitle, {
+      x,
+      y: y - 14,
+      size: 9,
+      font: fonts.regular,
+      color: theme.muted,
+    });
+  }
+
+  page.drawRectangle({
+    x: x + width - 72,
+    y: y - 2,
+    width: 72,
+    height: 2,
+    color: theme.primary,
+  });
+}
+
 export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
   const proposal = getProposalData(quote);
 
@@ -172,42 +296,62 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
   const regularFont = await pdfDoc.embedFont(StandardFonts.Helvetica);
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
+  const fonts = { regular: regularFont, bold: boldFont };
+  const theme: PdfTheme = {
+    primary: rgb(0.05, 0.52, 0.72),
+    primarySoft: rgb(0.92, 0.97, 0.99),
+    slate: rgb(0.11, 0.16, 0.23),
+    muted: rgb(0.39, 0.47, 0.56),
+    border: rgb(0.86, 0.9, 0.94),
+    white: rgb(1, 1, 1),
+    success: rgb(0.03, 0.48, 0.3),
+    warning: rgb(0.74, 0.16, 0.16),
+  };
+
   const pageWidth = 595;
   const pageHeight = 842;
-  const margin = 42;
-  const primary = rgb(0.11, 0.56, 0.67);
-  const dark = rgb(0.12, 0.17, 0.23);
-  const muted = rgb(0.41, 0.47, 0.54);
-  const soft = rgb(0.95, 0.97, 0.99);
-  const line = rgb(0.88, 0.91, 0.94);
-
+  const margin = 40;
   let page = pdfDoc.addPage([pageWidth, pageHeight]);
-  let y = pageHeight - margin;
+  let y = pageHeight;
 
   const createPage = () => {
     page = pdfDoc.addPage([pageWidth, pageHeight]);
-    y = pageHeight - margin;
     page.drawRectangle({
-      x: margin,
-      y: pageHeight - 72,
-      width: pageWidth - margin * 2,
-      height: 1,
-      color: line,
+      x: 0,
+      y: pageHeight - 94,
+      width: pageWidth,
+      height: 94,
+      color: theme.slate,
     });
     page.drawText(siteConfig.name, {
       x: margin,
-      y: pageHeight - 52,
-      size: 11,
+      y: pageHeight - 38,
+      size: 18,
       font: boldFont,
-      color: dark,
+      color: theme.white,
+    });
+    page.drawText("Propuesta de viaje", {
+      x: margin,
+      y: pageHeight - 62,
+      size: 10,
+      font: regularFont,
+      color: rgb(0.82, 0.9, 0.97),
     });
     page.drawText(`Cotizacion ${quote.quoteNumber}`, {
       x: pageWidth - margin - 170,
-      y: pageHeight - 52,
+      y: pageHeight - 38,
       size: 10,
-      font: regularFont,
-      color: muted,
+      font: boldFont,
+      color: theme.white,
     });
+    page.drawText(`Generada ${proposal.generatedAt}`, {
+      x: pageWidth - margin - 170,
+      y: pageHeight - 58,
+      size: 9,
+      font: regularFont,
+      color: rgb(0.82, 0.9, 0.97),
+    });
+    y = pageHeight - 120;
   };
 
   const ensureSpace = (height: number) => {
@@ -218,329 +362,339 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
 
   createPage();
 
-  page.drawText("Propuesta de viaje", {
-    x: margin,
-    y: y - 36,
-    size: 24,
-    font: boldFont,
-    color: primary,
-  });
   page.drawText(quote.title, {
     x: margin,
-    y: y - 66,
-    size: 14,
-    font: regularFont,
-    color: dark,
-  });
-  page.drawText(`Generada el ${proposal.generatedAt}`, {
-    x: margin,
-    y: y - 88,
-    size: 10,
-    font: regularFont,
-    color: muted,
-  });
-  y -= 118;
-
-  page.drawRectangle({
-    x: margin,
-    y: y - 78,
-    width: pageWidth - margin * 2,
-    height: 78,
-    color: soft,
-  });
-  page.drawText("Resumen del viaje", {
-    x: margin + 14,
-    y: y - 22,
-    size: 12,
+    y,
+    size: 24,
     font: boldFont,
-    color: dark,
+    color: theme.slate,
   });
-  page.drawText(`Cliente: ${proposal.clientName}`, {
-    x: margin + 14,
-    y: y - 42,
+  page.drawText("Documento comercial para seguimiento, aprobacion y pagos del viaje.", {
+    x: margin,
+    y: y - 22,
     size: 10,
     font: regularFont,
-    color: dark,
+    color: theme.muted,
   });
-  page.drawText(`Destino: ${proposal.destination}`, {
-    x: margin + 14,
-    y: y - 58,
+  y -= 52;
+
+  drawMetricCard(page, margin, y, 162, "Cliente", proposal.clientName, fonts, theme);
+  drawMetricCard(page, margin + 176, y, 162, "Destino", proposal.destination, fonts, theme);
+  drawMetricCard(page, margin + 352, y, 162, "Total cotizado", formatMoney(quote.grandTotal), fonts, theme);
+  y -= 74;
+
+  drawRoundedCard(page, margin, y - 104, pageWidth - margin * 2, 104, theme.primarySoft, theme.border);
+  page.drawText("Datos del viaje", {
+    x: margin + 16,
+    y: y - 18,
+    size: 13,
+    font: boldFont,
+    color: theme.slate,
+  });
+  page.drawText(`Fechas: ${proposal.checkIn} al ${proposal.checkOut} (${proposal.nights} noches)`, {
+    x: margin + 16,
+    y: y - 40,
     size: 10,
     font: regularFont,
-    color: dark,
+    color: theme.slate,
   });
-  page.drawText(`Fechas: ${proposal.checkIn} a ${proposal.checkOut} · ${proposal.nights} noches`, {
-    x: margin + 14,
-    y: y - 74,
-    size: 10,
-    font: regularFont,
-    color: dark,
-  });
-  page.drawText(`Ocupacion: ${proposal.adults} adultos · ${proposal.minors} menores${proposal.minorAges ? ` (${proposal.minorAges})` : ""}`, {
-    x: margin + 290,
-    y: y - 42,
-    size: 10,
-    font: regularFont,
-    color: dark,
-  });
-  page.drawText(`Total: ${formatMoney(quote.grandTotal)} · Anticipo: ${formatMoney(quote.depositRequired)}`, {
-    x: margin + 290,
-    y: y - 58,
-    size: 10,
-    font: regularFont,
-    color: dark,
-  });
+  page.drawText(
+    `Ocupacion: ${proposal.adults} adultos${proposal.minors ? ` · ${proposal.minors} menores` : ""}${
+      proposal.minorAges ? ` (${proposal.minorAges})` : ""
+    }`,
+    {
+      x: margin + 16,
+      y: y - 56,
+      size: 10,
+      font: regularFont,
+      color: theme.slate,
+    },
+  );
   page.drawText(`Vigencia: ${formatDate(quote.validUntil)}`, {
-    x: margin + 290,
-    y: y - 74,
+    x: margin + 16,
+    y: y - 72,
     size: 10,
     font: regularFont,
-    color: dark,
+    color: theme.slate,
   });
-  y -= 104;
+  page.drawText(`Anticipo: ${formatMoney(quote.depositRequired)}`, {
+    x: margin + 300,
+    y: y - 40,
+    size: 10,
+    font: boldFont,
+    color: theme.slate,
+  });
+  page.drawText(`Saldo restante: ${formatMoney(quote.balanceDue)}`, {
+    x: margin + 300,
+    y: y - 56,
+    size: 10,
+    font: boldFont,
+    color: theme.slate,
+  });
+  page.drawText(`Contacto: ${quote.customer?.email ?? "Sin correo"}${proposal.clientPhone ? ` · ${proposal.clientPhone}` : ""}`, {
+    x: margin + 300,
+    y: y - 72,
+    size: 10,
+    font: regularFont,
+    color: theme.slate,
+  });
+  y -= 128;
 
   for (const hotel of proposal.hotels) {
-    ensureSpace(170);
-    page.drawText(hotel.name, {
-      x: margin,
-      y,
-      size: 15,
-      font: boldFont,
-      color: dark,
-    });
-    y -= 18;
-    page.drawText(
+    ensureSpace(198);
+    drawRoundedCard(page, margin, y - 176, pageWidth - margin * 2, 176, theme.white, theme.border);
+    drawSectionTitle(
+      page,
+      hotel.name,
       `${hotel.supplierName ?? "Proveedor por confirmar"} · ${hotel.supplierCode ?? "Sin clave"} · ${hotel.roomType} · ${hotel.mealPlan}`,
-      {
-        x: margin,
-        y,
-        size: 10,
-        font: regularFont,
-        color: muted,
-      },
+      margin + 16,
+      y - 22,
+      pageWidth - margin * 2 - 32,
+      fonts,
+      theme,
     );
-    y -= 22;
 
-    const hotelRows = [
-      ["Codigo hotel", hotel.code || "N/D"],
-      ["Fecha de anticipo", hotel.depositDueDate || "Por definir"],
-      ["Monto de anticipo", hotel.depositAmount || formatMoney(quote.depositRequired)],
-      ["Fecha de liquidacion", hotel.balanceDueDate || "Por definir"],
-      ["Monto de saldo", hotel.balanceAmount || formatMoney(quote.balanceDue)],
-      ["Precio por noche", hotel.pricePerNight || "Incluido en total"],
-      ["Total del hotel", hotel.total],
-    ];
+    let rowY = y - 52;
+    rowY = drawDetailRow(page, "Codigo hotel", hotel.code || "N/D", margin + 16, rowY, 220, fonts, theme) - 10;
+    rowY = drawDetailRow(
+      page,
+      "Fecha anticipo",
+      hotel.depositDueDate || "Por definir",
+      margin + 16,
+      rowY,
+      220,
+      fonts,
+      theme,
+    ) - 10;
+    rowY = drawDetailRow(
+      page,
+      "Monto anticipo",
+      hotel.depositAmount || formatMoney(quote.depositRequired),
+      margin + 16,
+      rowY,
+      220,
+      fonts,
+      theme,
+    ) - 10;
+    rowY = drawDetailRow(
+      page,
+      "Fecha liquidacion",
+      hotel.balanceDueDate || "Por definir",
+      margin + 16,
+      rowY,
+      220,
+      fonts,
+      theme,
+    ) - 10;
 
-    for (const [label, value] of hotelRows) {
-      ensureSpace(22);
-      page.drawText(`${label}:`, {
-        x: margin,
-        y,
-        size: 10,
-        font: boldFont,
-        color: dark,
-      });
-      y = drawWrappedText(page, value, {
-        x: margin + 120,
-        y,
-        maxWidth: pageWidth - margin * 2 - 120,
-        font: regularFont,
-        size: 10,
-        color: dark,
-      });
-      y -= 4;
-    }
+    let rightY = y - 52;
+    rightY = drawDetailRow(
+      page,
+      "Monto saldo",
+      hotel.balanceAmount || formatMoney(quote.balanceDue),
+      margin + 278,
+      rightY,
+      240,
+      fonts,
+      theme,
+    ) - 10;
+    rightY = drawDetailRow(
+      page,
+      "Precio por noche",
+      hotel.pricePerNight || "Incluido en total",
+      margin + 278,
+      rightY,
+      240,
+      fonts,
+      theme,
+    ) - 10;
+    rightY = drawDetailRow(page, "Total hotel", hotel.total, margin + 278, rightY, 240, fonts, theme) - 10;
 
     if (hotel.legend) {
-      ensureSpace(30);
-      y = drawWrappedText(page, `Leyenda: ${hotel.legend}`, {
-        x: margin,
-        y,
-        maxWidth: pageWidth - margin * 2,
+      page.drawText(hotel.legend, {
+        x: margin + 16,
+        y: y - 148,
+        size: 9,
         font: boldFont,
-        size: 10,
-        color: rgb(0.78, 0.12, 0.12),
+        color: theme.warning,
       });
-      y -= 6;
     }
 
     if (hotel.note) {
-      ensureSpace(42);
-      page.drawRectangle({
-        x: margin,
-        y: y - 26,
-        width: pageWidth - margin * 2,
-        height: 26,
-        color: rgb(1, 0.97, 0.84),
-      });
-      y = drawWrappedText(page, hotel.note, {
-        x: margin + 8,
-        y: y - 16,
-        maxWidth: pageWidth - margin * 2 - 16,
+      drawRoundedCard(page, margin + 16, y - 168, pageWidth - margin * 2 - 32, 24, rgb(1, 0.97, 0.87), rgb(0.96, 0.86, 0.47));
+      drawWrappedText(page, hotel.note, {
+        x: margin + 24,
+        y: y - 158,
+        maxWidth: pageWidth - margin * 2 - 48,
         font: regularFont,
-        size: 9,
-        color: dark,
-        lineHeight: 12,
+        size: 8.5,
+        color: theme.slate,
+        lineHeight: 11,
       });
-      y -= 10;
     }
 
-    y -= 8;
+    y -= 194;
   }
 
   if (proposal.flights?.segments?.length) {
-    ensureSpace(120);
-    page.drawText("Vuelos", {
-      x: margin,
-      y,
-      size: 15,
-      font: boldFont,
-      color: dark,
-    });
-    y -= 22;
+    ensureSpace(144 + proposal.flights.segments.length * 40);
+    drawRoundedCard(page, margin, y - 124 - proposal.flights.segments.length * 30, pageWidth - margin * 2, 124 + proposal.flights.segments.length * 30, theme.white, theme.border);
+    drawSectionTitle(page, "Vuelos", "Tramos incluidos en la propuesta", margin + 16, y - 22, pageWidth - margin * 2 - 32, fonts, theme);
+    let flightY = y - 52;
 
     for (const segment of proposal.flights.segments) {
-      ensureSpace(52);
       page.drawRectangle({
-        x: margin,
-        y: y - 34,
-        width: pageWidth - margin * 2,
-        height: 34,
-        color: soft,
+        x: margin + 16,
+        y: flightY - 24,
+        width: pageWidth - margin * 2 - 32,
+        height: 24,
+        color: theme.primarySoft,
+        borderColor: theme.border,
+        borderWidth: 1,
       });
       page.drawText(`${segment.origin} → ${segment.destination}`, {
-        x: margin + 10,
-        y: y - 14,
+        x: margin + 24,
+        y: flightY - 9,
         size: 10,
         font: boldFont,
-        color: dark,
+        color: theme.slate,
       });
       page.drawText(
         `${formatDate(segment.departureDate)} · ${segment.departureTime} - ${segment.arrivalTime} · ${segment.type}`,
         {
-          x: margin + 10,
-          y: y - 28,
+          x: margin + 190,
+          y: flightY - 9,
           size: 9,
           font: regularFont,
-          color: muted,
+          color: theme.muted,
         },
       );
-      y -= 44;
+      flightY -= 32;
     }
 
     const baggageLine = [proposal.flights.baggageLabel, proposal.flights.personalItemLabel, proposal.flights.carryOnLabel]
       .filter(Boolean)
       .join(" · ");
+
     if (baggageLine) {
-      ensureSpace(24);
-      y = drawWrappedText(page, baggageLine, {
-        x: margin,
-        y,
-        maxWidth: pageWidth - margin * 2,
+      drawWrappedText(page, baggageLine, {
+        x: margin + 16,
+        y: flightY - 2,
+        maxWidth: pageWidth - margin * 2 - 32,
         font: regularFont,
-        size: 10,
-        color: muted,
+        size: 9,
+        color: theme.muted,
       });
-      y -= 8;
     }
+
+    y = flightY - 26;
   }
 
   if (proposal.transfer?.hotels?.length) {
-    ensureSpace(120);
-    page.drawText("Traslados", {
-      x: margin,
-      y,
-      size: 15,
-      font: boldFont,
-      color: dark,
-    });
-    y -= 18;
+    ensureSpace(132 + proposal.transfer.hotels.length * 20);
+    drawRoundedCard(page, margin, y - 96 - proposal.transfer.hotels.length * 20, pageWidth - margin * 2, 96 + proposal.transfer.hotels.length * 20, theme.white, theme.border);
+    drawSectionTitle(page, "Traslados", "Servicio adicional de aeropuerto y hotel", margin + 16, y - 22, pageWidth - margin * 2 - 32, fonts, theme);
     page.drawText(`Aeropuerto: ${proposal.transfer.airport}`, {
-      x: margin,
-      y,
+      x: margin + 16,
+      y: y - 46,
       size: 10,
       font: regularFont,
-      color: dark,
+      color: theme.slate,
     });
-    y -= 14;
     page.drawText(`Servicio: ${proposal.transfer.service}`, {
-      x: margin,
-      y,
+      x: margin + 16,
+      y: y - 62,
       size: 10,
       font: regularFont,
-      color: dark,
+      color: theme.slate,
     });
-    y -= 20;
+    page.drawText(`Pasajeros: ${proposal.transfer.adults} adultos · ${proposal.transfer.minors} menores`, {
+      x: margin + 300,
+      y: y - 46,
+      size: 10,
+      font: regularFont,
+      color: theme.slate,
+    });
+
+    let transferY = y - 88;
     for (const hotel of proposal.transfer.hotels) {
-      ensureSpace(24);
       page.drawText(hotel.name, {
-        x: margin,
-        y,
+        x: margin + 16,
+        y: transferY,
         size: 10,
         font: regularFont,
-        color: dark,
+        color: theme.slate,
       });
       page.drawText(hotel.price, {
         x: pageWidth - margin - 120,
-        y,
+        y: transferY,
         size: 10,
         font: boldFont,
-        color: dark,
+        color: theme.slate,
       });
-      y -= 16;
+      transferY -= 16;
     }
-    y -= 8;
+    y = transferY - 20;
   }
 
-  ensureSpace(88);
+  ensureSpace(164);
+  drawRoundedCard(page, margin, y - 144, pageWidth - margin * 2, 144, theme.slate, theme.slate);
   page.drawText("Resumen financiero", {
-    x: margin,
-    y,
+    x: margin + 16,
+    y: y - 22,
     size: 15,
     font: boldFont,
-    color: dark,
+    color: theme.white,
   });
-  y -= 22;
   const totals = [
     ["Subtotal", formatMoney(quote.subtotal)],
     ["Descuento", formatMoney(quote.discountTotal)],
     ["Total", formatMoney(quote.grandTotal)],
     ["Anticipo", formatMoney(quote.depositRequired)],
-    ["Saldo", formatMoney(quote.balanceDue)],
+    ["Saldo restante", formatMoney(quote.balanceDue)],
   ];
+  let totalY = y - 48;
 
   for (const [label, value] of totals) {
-    ensureSpace(18);
     page.drawText(label, {
-      x: margin,
-      y,
+      x: margin + 16,
+      y: totalY,
       size: 10,
       font: regularFont,
-      color: dark,
+      color: rgb(0.9, 0.94, 0.98),
     });
     page.drawText(value, {
-      x: pageWidth - margin - 120,
-      y,
+      x: pageWidth - margin - 130,
+      y: totalY,
       size: 10,
       font: boldFont,
-      color: dark,
+      color: theme.white,
     });
-    y -= 15;
+    totalY -= 18;
   }
 
-  if (proposal.footerNote) {
-    ensureSpace(46);
-    y -= 8;
-    y = drawWrappedText(page, proposal.footerNote, {
-      x: margin,
-      y,
-      maxWidth: pageWidth - margin * 2,
-      font: regularFont,
-      size: 9,
-      color: muted,
-      lineHeight: 12,
-    });
-  }
+  page.drawText("Este documento sirve como referencia comercial para seguimiento y autorizacion.", {
+    x: margin + 16,
+    y: y - 132,
+    size: 8.5,
+    font: regularFont,
+    color: rgb(0.76, 0.84, 0.92),
+  });
+  y -= 168;
+
+  const footerNote =
+    proposal.footerNote ??
+    "*Precio cotizado por el total en moneda mexicana, sujeto a disponibilidad y cambios sin previo aviso.";
+  ensureSpace(40);
+  drawWrappedText(page, footerNote, {
+    x: margin,
+    y,
+    maxWidth: pageWidth - margin * 2,
+    font: regularFont,
+    size: 8.5,
+    color: theme.muted,
+    lineHeight: 11,
+  });
 
   return pdfDoc.save();
 }

@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
 import { getSalesPackageBySlug } from "@/features/catalog/server/catalog-service";
+import { getOrCreateCustomer } from "@/features/orders/server/sales-service";
+import { ensureCustomerPortalAccess } from "@/features/auth/server/customer-access";
+import { sendInquiryTrackingLink } from "@/features/sharing/server/tracking-links";
 
 const quoteRequestSchema = z.object({
   firstName: z.string().min(2),
@@ -23,6 +26,15 @@ export async function POST(request: Request) {
     : null;
 
   try {
+    const customer = await getOrCreateCustomer({
+      firstName: data.firstName,
+      email: data.email,
+      phone: data.phone,
+      source: "quote-form",
+    });
+
+    await ensureCustomerPortalAccess(customer.id);
+
     const lead = await prisma.lead.create({
       data: {
         firstName: data.firstName,
@@ -36,6 +48,7 @@ export async function POST(request: Request) {
     const inquiry = await prisma.inquiry.create({
       data: {
         leadId: lead.id,
+        customerId: customer.id,
         type: "QUOTE_REQUEST",
         channel: "website",
         packageId: matchedPackage?.id,
@@ -49,9 +62,16 @@ export async function POST(request: Request) {
       },
     });
 
+    await sendInquiryTrackingLink({
+      inquiryId: inquiry.id,
+      recipientEmail: data.email,
+      recipientName: data.firstName,
+    });
+
     return NextResponse.json({
       ok: true,
-      message: "Solicitud registrada. Te prepararemos una cotización personalizada con base en tus condiciones.",
+      message:
+        "Solicitud registrada. Te enviamos un link por correo para dar seguimiento a tu solicitud mientras preparamos tu cotización.",
       inquiryId: inquiry.id,
     });
   } catch {
