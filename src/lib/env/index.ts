@@ -8,6 +8,7 @@ export const env = {
     process.env.MAILCHIMP_TRANSACTIONAL_FROM_EMAIL ?? "noreply@alondratravelmx.com",
   mailchimpTransactionalFromName:
     process.env.MAILCHIMP_TRANSACTIONAL_FROM_NAME ?? "Alondra Travel MX",
+  mailchimpTransactionalWebhookKey: process.env.MAILCHIMP_TRANSACTIONAL_WEBHOOK_KEY,
   emailFrom: process.env.EMAIL_FROM ?? "Alondra Travel MX <noreply@alondratravelmx.com>",
   mercadoPagoAccessToken: process.env.MERCADO_PAGO_ACCESS_TOKEN,
   mercadoPagoPublicKey: process.env.NEXT_PUBLIC_MERCADO_PAGO_PUBLIC_KEY,

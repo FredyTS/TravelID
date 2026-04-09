@@ -107,12 +107,22 @@ export async function sendQuoteShareLink(input: {
   await sendPortalTrackingEmail({
     email: input.recipientEmail,
     recipientName: quote.customer?.firstName ?? null,
-    subject: `Tu cotización ${quote.quoteNumber} ya está lista`,
+    subject: `Tu cotizacion ${quote.quoteNumber} ya esta lista`,
     intro: `Preparamos tu propuesta ${quote.title}. Puedes revisar el resumen y la propuesta compartida desde este enlace.`,
     ctaUrl: shareUrl,
-    ctaLabel: "Ver cotización compartida",
+    ctaLabel: "Ver cotizacion compartida",
     secondaryUrl: portalUrl,
     secondaryLabel: "Entrar al portal completo",
+    tracking: {
+      category: "QUOTE_SHARE_LINK",
+      quoteId: quote.id,
+      customerId: quote.customerId ?? undefined,
+      metadata: {
+        recipientEmail: input.recipientEmail,
+        shareUrl,
+        portalUrl,
+      },
+    },
   });
 
   await prisma.quote.update({
@@ -159,12 +169,22 @@ export async function sendOrderShareLink(input: {
   await sendPortalTrackingEmail({
     email: input.recipientEmail,
     recipientName: order.customer.firstName ?? null,
-    subject: `Tu pedido ${order.orderNumber} ya está disponible`,
+    subject: `Tu pedido ${order.orderNumber} ya esta disponible`,
     intro: `Ya puedes revisar el estado de tu viaje, documentos y seguimiento desde este enlace compartido.`,
     ctaUrl: shareUrl,
     ctaLabel: "Ver seguimiento compartido",
     secondaryUrl: portalUrl,
     secondaryLabel: "Entrar al portal completo",
+    tracking: {
+      category: "ORDER_SHARE_LINK",
+      orderId: order.id,
+      customerId: order.customerId,
+      metadata: {
+        recipientEmail: input.recipientEmail,
+        shareUrl,
+        portalUrl,
+      },
+    },
   });
 
   await prisma.activityLog.create({
@@ -200,12 +220,21 @@ export async function sendInquiryTrackingLink(input: {
   await sendPortalTrackingEmail({
     email: input.recipientEmail,
     recipientName: input.recipientName,
-    subject: "Recibimos tu solicitud de cotización",
-    intro: "Ya registramos tu solicitud. Desde este enlace podrás darle seguimiento al estado de tu petición mientras preparamos tu propuesta.",
+    subject: "Recibimos tu solicitud de cotizacion",
+    intro: "Ya registramos tu solicitud. Desde este enlace podras darle seguimiento al estado de tu peticion mientras preparamos tu propuesta.",
     ctaUrl: shareUrl,
     ctaLabel: "Dar seguimiento a mi solicitud",
     secondaryUrl: absoluteUrl("/login"),
     secondaryLabel: "Entrar al portal",
+    tracking: {
+      category: "INQUIRY_TRACKING_LINK",
+      inquiryId: inquiry.id,
+      customerId: inquiry.customerId ?? undefined,
+      metadata: {
+        recipientEmail: input.recipientEmail,
+        shareUrl,
+      },
+    },
   });
 
   await prisma.activityLog.create({
