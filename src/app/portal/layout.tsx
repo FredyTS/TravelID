@@ -17,7 +17,7 @@ export default async function PortalLayout({ children }: { children: React.React
   const session = await getServerAuthSession();
 
   if (!session?.user?.customerId) {
-    redirect("/login");
+    redirect("/acceso");
   }
 
   return (

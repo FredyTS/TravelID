@@ -124,7 +124,7 @@ export default async function SharedOrderPage({
               <p className="mt-3 text-sm text-slate-600">
                 Para pagar, descargar documentos o mandar mensajes, entra al portal con el correo del titular.
               </p>
-              <Link href="/login" className="mt-4 inline-flex text-sm font-medium text-primary hover:underline">
+              <Link href="/acceso" className="mt-4 inline-flex text-sm font-medium text-primary hover:underline">
                 Ir al portal
               </Link>
             </div>

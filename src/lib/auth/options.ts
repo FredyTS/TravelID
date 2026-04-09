@@ -77,8 +77,8 @@ export const authOptions: NextAuthOptions = {
     strategy: "jwt",
   },
   pages: {
-    signIn: "/login",
-    verifyRequest: "/acceso",
+    signIn: "/acceso",
+    verifyRequest: "/verificar-acceso",
   },
   providers: [
     CredentialsProvider({
