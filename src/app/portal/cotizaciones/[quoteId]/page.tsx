@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db/prisma";
 import { canAccessCustomerResource } from "@/lib/permissions/policies";
 import { formatCurrency } from "@/lib/utils";
 import { ApproveQuoteButton } from "@/features/quotes/components/approve-quote-button";
+import { QuoteFeedbackForm } from "@/features/quotes/components/quote-feedback-form";
 import { markQuoteViewed } from "@/features/orders/server/sales-service";
 
 export const dynamic = "force-dynamic";
@@ -126,14 +127,17 @@ export default async function PortalQuoteDetailPage({
               </p>
             </div>
           ) : canApprove ? (
-            <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
-              <p className="text-sm font-semibold text-slate-950">¿Te gusta esta propuesta?</p>
-              <p className="mt-2 text-sm text-slate-600">
-                Al aprobarla generaremos tu pedido y desde ahi podras pagar anticipo, revisar estatus y descargar documentos.
-              </p>
-              <div className="mt-4 max-w-sm">
-                <ApproveQuoteButton quoteId={quote.id} />
+            <div className="space-y-4">
+              <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
+                <p className="text-sm font-semibold text-slate-950">¿Te gusta esta propuesta?</p>
+                <p className="mt-2 text-sm text-slate-600">
+                  Al aprobarla generaremos tu pedido y desde ahi podras pagar anticipo, revisar estatus y descargar documentos.
+                </p>
+                <div className="mt-4 max-w-sm">
+                  <ApproveQuoteButton quoteId={quote.id} />
+                </div>
               </div>
+              <QuoteFeedbackForm quoteId={quote.id} />
             </div>
           ) : null}
 

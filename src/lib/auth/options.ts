@@ -129,6 +129,15 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       const userId = user?.id ?? token.sub;
+      const tokenEmail = (user?.email ?? token.email)?.toString().toLowerCase();
+
+      if (userId && tokenEmail) {
+        await ensurePortalCustomerForUser({
+          userId,
+          email: tokenEmail,
+          name: user?.name ?? token.name?.toString(),
+        });
+      }
 
       if (userId) {
         const dbUser = await prisma.user.findUnique({

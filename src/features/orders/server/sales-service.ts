@@ -14,6 +14,7 @@ import { prisma } from "@/lib/db/prisma";
 import { ensureCustomerPortalAccess } from "@/features/auth/server/customer-access";
 import { getSalesPackageBySlug } from "@/features/catalog/server/catalog-service";
 import { renderQuoteProposalHtml, type QuoteProposalData } from "@/features/quotes/server/proposal-template";
+import { sendCustomerMessage } from "@/features/communications/server/communications-service";
 
 function generateQuoteNumber() {
   return `Q-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
@@ -470,6 +471,114 @@ export async function approveQuoteFromPortal(input: {
   return convertQuoteToOrder({
     quoteId: quote.id,
     adminUserId,
+  });
+}
+
+export async function requestQuoteChangesFromPortal(input: {
+  quoteId: string;
+  customerId: string;
+  body: string;
+}) {
+  const quote = await prisma.quote.findFirst({
+    where: {
+      id: input.quoteId,
+      customerId: input.customerId,
+    },
+  });
+
+  if (!quote) {
+    throw new Error("Cotizacion no encontrada.");
+  }
+
+  if (quote.convertedOrderId) {
+    throw new Error("Esta cotizacion ya fue convertida a pedido.");
+  }
+
+  await prisma.quote.update({
+    where: { id: quote.id },
+    data: {
+      status: QuoteStatus.DRAFT,
+      viewedAt: quote.viewedAt ?? new Date(),
+    },
+  });
+
+  await sendCustomerMessage({
+    customerId: input.customerId,
+    quoteId: quote.id,
+    subject: `Cambios solicitados para ${quote.quoteNumber}`,
+    body: input.body,
+  });
+
+  await prisma.activityLog.create({
+    data: {
+      entityType: "Quote",
+      entityId: quote.id,
+      action: "QUOTE_CHANGES_REQUESTED",
+      description: `El cliente solicito ajustes para la cotizacion ${quote.quoteNumber}.`,
+      actorType: "CLIENT",
+      metadata: {
+        customerId: input.customerId,
+      },
+    },
+  });
+
+  return prisma.quote.findUniqueOrThrow({
+    where: { id: quote.id },
+  });
+}
+
+export async function rejectQuoteFromPortal(input: {
+  quoteId: string;
+  customerId: string;
+  body?: string;
+}) {
+  const quote = await prisma.quote.findFirst({
+    where: {
+      id: input.quoteId,
+      customerId: input.customerId,
+    },
+  });
+
+  if (!quote) {
+    throw new Error("Cotizacion no encontrada.");
+  }
+
+  if (quote.convertedOrderId) {
+    throw new Error("Esta cotizacion ya fue convertida a pedido.");
+  }
+
+  await prisma.quote.update({
+    where: { id: quote.id },
+    data: {
+      status: QuoteStatus.REJECTED,
+      viewedAt: quote.viewedAt ?? new Date(),
+    },
+  });
+
+  if (input.body?.trim()) {
+    await sendCustomerMessage({
+      customerId: input.customerId,
+      quoteId: quote.id,
+      subject: `Cotizacion ${quote.quoteNumber} descartada por el cliente`,
+      body: input.body,
+    });
+  }
+
+  await prisma.activityLog.create({
+    data: {
+      entityType: "Quote",
+      entityId: quote.id,
+      action: "QUOTE_REJECTED_BY_CUSTOMER",
+      description: `El cliente descarto la cotizacion ${quote.quoteNumber}.`,
+      actorType: "CLIENT",
+      metadata: {
+        customerId: input.customerId,
+      },
+    },
+  });
+
+  return prisma.quote.findUniqueOrThrow({
+    where: { id: quote.id },
   });
 }
 
