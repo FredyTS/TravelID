@@ -1,34 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, CreditCard, HeartHandshake, MapPinned, ShieldCheck } from "lucide-react";
+import { ArrowRight, BadgePercent, CalendarDays, MapPinned, Sparkles } from "lucide-react";
 import { getFeaturedPackages, getPromotions } from "@/features/catalog/server/catalog-service";
 import { SectionHeading } from "@/components/shared/section-heading";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-const pillars = [
-  {
-    icon: MapPinned,
-    title: "Paquetes listos para reservar",
-    description: "Cuando el paquete coincide con los viajeros incluidos, puedes apartarlo sin pasar por cotizacion.",
-  },
-  {
-    icon: HeartHandshake,
-    title: "Cotizacion personalizada",
-    description: "Si cambian fechas, origen o numero de viajeros, preparamos una propuesta a medida.",
-  },
-  {
-    icon: CreditCard,
-    title: "Reserva con anticipo",
-    description: "Separa tu viaje con anticipo o liquida el total con una experiencia de pago simple y segura.",
-  },
-  {
-    icon: ShieldCheck,
-    title: "Seguimiento antes del viaje",
-    description: "Consulta documentos, itinerario y actualizaciones en un solo lugar antes de salir.",
-  },
-];
 
 export default async function HomePage() {
   const [featuredPackages, currentPromotions] = await Promise.all([
@@ -39,102 +16,128 @@ export default async function HomePage() {
   const heroPackage = featuredPackages[0];
 
   return (
-    <div className="pb-16">
-      <section className="container-shell pt-14 md:pt-20">
-        <div className="grid gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <div className="space-y-7">
-            <Badge className="rounded-full bg-primary/10 px-4 py-1.5 text-primary hover:bg-primary/10">
-              Paquetes destacados, promociones y viajes a medida
+    <div className="pb-20">
+      <section className="container-shell pt-10 md:pt-14">
+        <div className="grid gap-8 xl:grid-cols-[1.08fr_0.92fr]">
+          <div className="overflow-hidden rounded-[2rem] border border-white/70 bg-[radial-gradient(circle_at_top_left,_rgba(14,165,233,0.18),_transparent_40%),linear-gradient(135deg,#ffffff_0%,#eff8ff_38%,#f8fafc_100%)] p-8 shadow-[0_32px_90px_-40px_rgba(15,23,42,0.45)] md:p-10">
+            <Badge className="rounded-full bg-sky-100 px-4 py-1.5 text-sky-800 hover:bg-sky-100">
+              Paquetes, promociones y cotizaciones personalizadas
             </Badge>
-            <div className="space-y-5">
-              <h1 className="max-w-4xl text-5xl leading-tight md:text-7xl">
-                Descubre playas, escapadas y experiencias memorables con Alondra Travel MX.
+            <div className="mt-6 space-y-5">
+              <h1 className="max-w-4xl text-5xl leading-tight text-slate-950 md:text-7xl">
+                Viajes listos para inspirarte, apartar y planear con confianza.
               </h1>
               <p className="max-w-2xl text-lg text-slate-600 md:text-xl">
-                Encuentra tu proximo paquete vacacional, reserva de inmediato cuando el paquete encaje contigo o solicita una cotizacion personalizada si necesitas ajustar condiciones.
+                Descubre paquetes con salida definida, precios publicados y promociones vigentes. Si necesitas otra ciudad de salida, fechas distintas o una combinación especial, te preparamos una cotización personalizada.
               </p>
             </div>
-            <div className="flex flex-wrap gap-3 pt-2">
+            <div className="mt-8 flex flex-wrap gap-3">
               <Button asChild size="lg">
                 <Link href="/paquetes">
-                  Ver paquetes
+                  Explorar paquetes
                   <ArrowRight className="ml-2 size-4" />
                 </Link>
               </Button>
               <Button asChild size="lg" variant="outline">
-                <Link href="/cotizar">Cotiza tu viaje</Link>
+                <Link href="/promociones">Ver promociones</Link>
+              </Button>
+              <Button asChild size="lg" variant="ghost">
+                <Link href="/cotizar">Solicitar cotización</Link>
               </Button>
             </div>
-            <div className="grid max-w-2xl gap-4 sm:grid-cols-3">
-              <div className="rounded-3xl border border-white/70 bg-white/70 p-4">
-                <p className="text-sm text-slate-500">Destinos destacados</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-950">12+</p>
+
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              <div className="rounded-[1.75rem] border border-white/80 bg-white/80 p-5">
+                <p className="text-sm text-slate-500">Paquetes destacados</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-950">{featuredPackages.length}</p>
               </div>
-              <div className="rounded-3xl border border-white/70 bg-white/70 p-4">
+              <div className="rounded-[1.75rem] border border-white/80 bg-white/80 p-5">
                 <p className="text-sm text-slate-500">Promociones activas</p>
                 <p className="mt-2 text-3xl font-semibold text-slate-950">{currentPromotions.length}</p>
               </div>
-              <div className="rounded-3xl border border-white/70 bg-white/70 p-4">
-                <p className="text-sm text-slate-500">Desde</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-950">$12,990</p>
+              <div className="rounded-[1.75rem] border border-white/80 bg-white/80 p-5">
+                <p className="text-sm text-slate-500">Aparta desde</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-950">25%</p>
               </div>
             </div>
           </div>
 
-          <div className="relative grid gap-4">
+          <div className="grid gap-4">
             {heroPackage ? (
-              <div className="relative overflow-hidden rounded-[2rem] border border-white/70 shadow-[0_30px_70px_-20px_rgba(15,23,42,0.3)]">
+              <div className="relative overflow-hidden rounded-[2rem] border border-white/70 shadow-[0_32px_90px_-40px_rgba(15,23,42,0.55)]">
                 <Image
                   src={heroPackage.heroImage}
                   alt={heroPackage.name}
                   width={1200}
-                  height={900}
-                  className="h-[460px] w-full object-cover"
+                  height={920}
+                  className="h-[430px] w-full object-cover"
                   priority
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/15 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/15 to-transparent" />
                 <div className="absolute inset-x-0 bottom-0 p-7 text-white">
-                  <p className="text-xs font-semibold uppercase tracking-[0.28em] text-cyan-200">
-                    Reserva directa disponible
-                  </p>
-                  <h2 className="mt-3 text-3xl text-white">{heroPackage.name}</h2>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge className="bg-white/15 text-white hover:bg-white/15">{heroPackage.destination}</Badge>
+                    <Badge className="bg-white/15 text-white hover:bg-white/15">Salida desde {heroPackage.departureCity}</Badge>
+                  </div>
+                  <h2 className="mt-4 text-3xl text-white">{heroPackage.name}</h2>
                   <p className="mt-2 max-w-lg text-sm text-white/85">{heroPackage.summary}</p>
-                  <p className="mt-3 text-sm font-medium text-white/90">
-                    Precio para {heroPackage.includedTravelers}
-                  </p>
+                  <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-white/90">
+                    <span>Precio para {heroPackage.includedTravelers}</span>
+                    <span>{heroPackage.duration}</span>
+                  </div>
                 </div>
               </div>
             ) : null}
-            <div className="grid gap-4 sm:grid-cols-2">
-              {pillars.map((pillar) => (
-                <Card key={pillar.title} className="border-slate-200/80 bg-white/85 shadow-none">
-                  <CardHeader className="pb-3">
-                    <CardTitle className="flex items-center gap-3 text-lg">
-                      <span className="rounded-2xl bg-primary/10 p-2 text-primary">
-                        <pillar.icon className="size-5" />
-                      </span>
-                      {pillar.title}
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent className="text-sm text-slate-600">{pillar.description}</CardContent>
-                </Card>
-              ))}
+
+            <div className="grid gap-4 md:grid-cols-2">
+              <Card className="border-slate-200/80 bg-white/90 shadow-none">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <span className="rounded-2xl bg-sky-100 p-2 text-sky-700">
+                      <MapPinned className="size-5" />
+                    </span>
+                    Paquetes con ciudad de salida
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-slate-600">
+                  El precio publicado se muestra con la ciudad de salida incluida para que sepas cuándo puedes apartarlo de inmediato.
+                </CardContent>
+              </Card>
+              <Card className="border-slate-200/80 bg-white/90 shadow-none">
+                <CardHeader className="pb-3">
+                  <CardTitle className="flex items-center gap-3 text-lg">
+                    <span className="rounded-2xl bg-amber-100 p-2 text-amber-700">
+                      <BadgePercent className="size-5" />
+                    </span>
+                    Promociones activas
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-slate-600">
+                  Descuentos, campañas y condiciones comerciales para reservar en el mejor momento.
+                </CardContent>
+              </Card>
             </div>
           </div>
         </div>
       </section>
 
       <section className="container-shell mt-20 space-y-8">
-        <SectionHeading
-          eyebrow="Escapadas destacadas"
-          title="Paquetes destacados"
-          description="Cada paquete indica para cuántos adultos y menores aplica el precio mostrado y si puedes reservarlo tal cual."
-        />
-        <div className="grid gap-6 lg:grid-cols-3">
+        <div className="flex flex-wrap items-end justify-between gap-4">
+          <SectionHeading
+            eyebrow="Paquetes"
+            title="Paquetes listos para reservar o cotizar"
+            description="Compara destinos, revisa desde qué ciudad sale cada propuesta y elige si te conviene apartar con el precio publicado o pedir un ajuste personalizado."
+          />
+          <Button asChild variant="outline">
+            <Link href="/paquetes">Ver todo el catálogo</Link>
+          </Button>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-3">
           {featuredPackages.map((travelPackage) => (
             <Card
               key={travelPackage.id}
-              className="overflow-hidden border-0 bg-white/88 shadow-[0_24px_70px_-30px_rgba(15,23,42,0.35)]"
+              className="overflow-hidden rounded-[2rem] border-0 bg-white shadow-[0_28px_80px_-38px_rgba(15,23,42,0.42)]"
             >
               <div className="relative h-64">
                 <Image src={travelPackage.heroImage} alt={travelPackage.name} fill className="object-cover" />
@@ -142,30 +145,37 @@ export default async function HomePage() {
               <CardHeader className="space-y-3">
                 <div className="flex flex-wrap gap-2">
                   <Badge variant="secondary">{travelPackage.destination}</Badge>
-                  <Badge variant="secondary">{travelPackage.travelType}</Badge>
+                  <Badge variant="secondary">Salida desde {travelPackage.departureCity}</Badge>
                   <Badge variant="secondary">{travelPackage.includedTravelers}</Badge>
                 </div>
                 <CardTitle>{travelPackage.name}</CardTitle>
                 <p className="text-sm text-slate-600">{travelPackage.summary}</p>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="flex items-end justify-between">
-                  <div>
-                    <p className="text-sm text-slate-500">Desde</p>
-                    <p className="text-3xl font-semibold text-slate-950">
-                      ${travelPackage.priceFrom.toLocaleString("es-MX")} MXN
-                    </p>
+                <div className="grid gap-2 rounded-[1.5rem] bg-slate-50 p-4 text-sm text-slate-600">
+                  <div className="flex items-center justify-between">
+                    <span>Duración</span>
+                    <span className="font-medium text-slate-950">{travelPackage.duration}</span>
                   </div>
-                  <Badge>{travelPackage.duration}</Badge>
+                  <div className="flex items-center justify-between">
+                    <span>Tipo</span>
+                    <span className="font-medium text-slate-950">{travelPackage.travelType}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span>Precio desde</span>
+                    <span className="text-xl font-semibold text-slate-950">
+                      ${travelPackage.priceFrom.toLocaleString("es-MX")} MXN
+                    </span>
+                  </div>
                 </div>
                 <p className="text-sm text-slate-500">{travelPackage.reservationNote}</p>
                 <div className="grid gap-3">
                   <Button asChild className="w-full">
-                    <Link href={`/paquetes/${travelPackage.slug}`}>Ver detalle</Link>
+                    <Link href={`/paquetes/${travelPackage.slug}`}>Ver paquete completo</Link>
                   </Button>
                   {travelPackage.directBookable ? (
                     <Button asChild variant="outline" className="w-full">
-                      <Link href={`/reservar?package=${travelPackage.slug}`}>Reservar tal cual</Link>
+                      <Link href={`/reservar?package=${travelPackage.slug}`}>Reserva inmediata</Link>
                     </Button>
                   ) : null}
                 </div>
@@ -176,28 +186,43 @@ export default async function HomePage() {
       </section>
 
       <section className="container-shell mt-20">
-        <div className="surface grid gap-8 p-8 lg:grid-cols-[0.8fr_1.2fr]">
-          <SectionHeading
-            eyebrow="Promociones"
-            title="Promociones para reservar en el mejor momento"
-            description="Ofertas pensadas para mover reservas con descuentos, anticipos accesibles y vigencias claras."
-          />
+        <div className="grid gap-6 xl:grid-cols-[0.88fr_1.12fr]">
+          <div className="rounded-[2rem] bg-[linear-gradient(135deg,#082f49_0%,#0f766e_100%)] p-8 text-white shadow-[0_32px_90px_-40px_rgba(8,47,73,0.8)]">
+            <Badge className="bg-white/15 text-white hover:bg-white/15">Promociones</Badge>
+            <h2 className="mt-5 text-4xl text-white">Aprovecha campañas vigentes antes de que cambien las tarifas.</h2>
+            <p className="mt-4 max-w-xl text-white/80">
+              Encuentra descuentos por temporada, campañas de anticipo y oportunidades para apartar tu viaje con mejores condiciones.
+            </p>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild variant="secondary" size="lg">
+                <Link href="/promociones">Explorar promociones</Link>
+              </Button>
+              <Button asChild variant="ghost" size="lg" className="text-white hover:bg-white/10 hover:text-white">
+                <Link href="/cotizar">Quiero una propuesta</Link>
+              </Button>
+            </div>
+          </div>
+
           <div className="grid gap-4">
             {currentPromotions.map((promotion) => (
               <div
                 key={promotion.id}
-                className="rounded-3xl border border-slate-200/80 bg-slate-50/70 p-5"
+                className="rounded-[1.75rem] border border-slate-200 bg-white p-6 shadow-[0_22px_70px_-42px_rgba(15,23,42,0.35)]"
               >
                 <div className="flex flex-wrap items-center justify-between gap-3">
-                  <h3 className="text-xl">{promotion.title}</h3>
-                  <Badge className="bg-amber-300 text-slate-950 hover:bg-amber-300">
-                    {promotion.discountLabel}
-                  </Badge>
+                  <div>
+                    <p className="text-sm font-medium text-slate-500">Aplicable en {promotion.appliesToLabel}</p>
+                    <h3 className="mt-2 text-2xl text-slate-950">{promotion.title}</h3>
+                  </div>
+                  <Badge className="bg-amber-300 text-slate-950 hover:bg-amber-300">{promotion.discountLabel}</Badge>
                 </div>
-                <p className="mt-3 text-sm text-slate-600">{promotion.description}</p>
-                <p className="mt-4 text-sm font-medium text-slate-500">
-                  Vigencia: {promotion.validUntil}
-                </p>
+                <p className="mt-4 text-sm text-slate-600">{promotion.description}</p>
+                <div className="mt-5 flex flex-wrap items-center justify-between gap-3 text-sm text-slate-500">
+                  <span>Vigencia: {promotion.validUntil}</span>
+                  <Link href={`/promociones/${promotion.slug}`} className="font-medium text-primary hover:underline">
+                    Ver detalle
+                  </Link>
+                </div>
               </div>
             ))}
           </div>
@@ -205,37 +230,56 @@ export default async function HomePage() {
       </section>
 
       <section className="container-shell mt-20">
-        <div className="grid gap-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
-          <SectionHeading
-            eyebrow="Atencion personalizada"
-            title="¿El paquete no encaja exactamente contigo?"
-            description="Si cambian viajeros, edades, fechas, ciudad de salida o servicios incluidos, armamos una cotizacion personalizada."
-          />
-          <div className="surface p-8">
-            <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-3xl bg-slate-50 p-5">
-                <p className="text-sm font-medium text-slate-500">Reserva directa</p>
-                <h3 className="mt-2 text-xl">Cuando te funciona tal cual</h3>
-                <p className="mt-2 text-sm text-slate-600">
-                  Si el paquete y el numero de viajeros coinciden con lo publicado, puedes reservar de inmediato.
-                </p>
+        <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
+          <div className="rounded-[2rem] border border-slate-200 bg-white p-8 shadow-[0_24px_70px_-40px_rgba(15,23,42,0.28)]">
+            <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">Cotización personalizada</Badge>
+            <h2 className="mt-5 text-4xl text-slate-950">¿Quieres cambiar ciudad de salida, fechas o viajeros?</h2>
+            <p className="mt-4 max-w-2xl text-slate-600">
+              Cuando el paquete publicado no coincide exactamente con lo que buscas, armamos una propuesta con la ocupación, ciudad de salida, fechas y servicios que sí te funcionan.
+            </p>
+            <div className="mt-8 grid gap-4 md:grid-cols-3">
+              <div className="rounded-[1.5rem] bg-slate-50 p-5">
+                <MapPinned className="size-5 text-sky-700" />
+                <p className="mt-3 font-medium text-slate-950">Otra ciudad de salida</p>
+                <p className="mt-2 text-sm text-slate-600">Si no sales desde la ciudad publicada, recalculamos la propuesta.</p>
               </div>
-              <div className="rounded-3xl bg-slate-50 p-5">
-                <p className="text-sm font-medium text-slate-500">Cotizacion</p>
-                <h3 className="mt-2 text-xl">Cuando necesitas cambios</h3>
-                <p className="mt-2 text-sm text-slate-600">
-                  Ajustamos fechas, ocupacion, origen, hotel o extras para proponerte una opcion personalizada.
-                </p>
+              <div className="rounded-[1.5rem] bg-slate-50 p-5">
+                <CalendarDays className="size-5 text-emerald-700" />
+                <p className="mt-3 font-medium text-slate-950">Fechas distintas</p>
+                <p className="mt-2 text-sm text-slate-600">Ajustamos disponibilidad, vigencia y condiciones comerciales.</p>
+              </div>
+              <div className="rounded-[1.5rem] bg-slate-50 p-5">
+                <Sparkles className="size-5 text-amber-700" />
+                <p className="mt-3 font-medium text-slate-950">Viaje a medida</p>
+                <p className="mt-2 text-sm text-slate-600">Hotel, traslados, vuelos y extras según tu perfil de viaje.</p>
               </div>
             </div>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <Button asChild>
-                <Link href="/cotizar">Solicitar propuesta</Link>
+            <div className="mt-8 flex flex-wrap gap-3">
+              <Button asChild size="lg">
+                <Link href="/cotizar">Solicitar cotización</Link>
               </Button>
-              <Button asChild variant="outline">
+              <Button asChild size="lg" variant="outline">
                 <Link href="/contacto">Hablar por WhatsApp o correo</Link>
               </Button>
             </div>
+          </div>
+
+          <div className="grid gap-4">
+            {featuredPackages.slice(0, 2).map((travelPackage) => (
+              <Card key={travelPackage.id} className="rounded-[1.75rem] border-slate-200 bg-white shadow-none">
+                <CardHeader>
+                  <div className="flex flex-wrap gap-2">
+                    <Badge variant="secondary">{travelPackage.destination}</Badge>
+                    <Badge variant="secondary">Salida desde {travelPackage.departureCity}</Badge>
+                  </div>
+                  <CardTitle className="mt-2">{travelPackage.name}</CardTitle>
+                </CardHeader>
+                <CardContent className="text-sm text-slate-600">
+                  <p>{travelPackage.highlight}</p>
+                  <p className="mt-3">{travelPackage.reservationNote}</p>
+                </CardContent>
+              </Card>
+            ))}
           </div>
         </div>
       </section>

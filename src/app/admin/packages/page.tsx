@@ -49,7 +49,7 @@ export default async function AdminPackagesPage({
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-teal-700">Producto comercial</p>
             <h1 className="mt-3 text-4xl">Paquetes</h1>
             <p className="mt-3 max-w-3xl text-slate-600">
-              Captura la informacion de venta que alimenta la home, el catalogo, la reserva directa y las cotizaciones.
+              Captura la informacion de venta que alimenta la home, el catalogo, la reserva inmediata y las cotizaciones.
             </p>
           </div>
           <Badge className="rounded-full bg-slate-100 px-4 py-2 text-slate-700 hover:bg-slate-100">
@@ -127,6 +127,10 @@ export default async function AdminPackagesPage({
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Ubicacion visible</label>
                   <Input name="locationLabel" defaultValue={currentPackage?.locationLabel ?? ""} placeholder="Caribe Mexicano" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Ciudad de salida incluida</label>
+                  <Input name="departureCity" defaultValue={currentPackage?.departureCity ?? ""} placeholder="Ciudad de Mexico" />
                 </div>
               </div>
 
@@ -208,14 +212,14 @@ export default async function AdminPackagesPage({
                   name="reservationNote"
                   rows={3}
                   defaultValue={currentPackage?.reservationNote ?? ""}
-                  placeholder="Aclara si el paquete se puede reservar tal cual o si conviene cotizar."
+                  placeholder="Aclara cuándo aplica el precio publicado y cuándo conviene cotizar."
                 />
               </div>
 
               <div className="grid gap-3 md:grid-cols-3">
                 <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                   <input type="checkbox" name="directBookable" defaultChecked={currentPackage?.directBookable ?? false} />
-                  Reservable tal cual
+                  Permite reserva inmediata
                 </label>
                 <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
                   <input type="checkbox" name="featured" defaultChecked={currentPackage?.featured ?? false} />
@@ -278,7 +282,7 @@ export default async function AdminPackagesPage({
                             <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">Destacado</Badge>
                           ) : null}
                           {travelPackage.directBookable ? (
-                            <Badge className="bg-sky-100 text-sky-800 hover:bg-sky-100">Reserva directa</Badge>
+                            <Badge className="bg-sky-100 text-sky-800 hover:bg-sky-100">Reserva inmediata</Badge>
                           ) : null}
                         </div>
                       </TableCell>

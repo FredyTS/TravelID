@@ -80,6 +80,7 @@ function mapPackageForPublic(record: PublicPackageRecord) {
     destination: record.destination.name,
     location:
       record.locationLabel ?? record.destination.region ?? record.destination.country ?? "Mexico",
+    departureCity: record.departureCity ?? "Ciudad de Mexico",
     summary: record.summary,
     description: record.description,
     duration: buildDuration(record),
@@ -98,7 +99,7 @@ function mapPackageForPublic(record: PublicPackageRecord) {
     directBookable: record.directBookable,
     reservationNote:
       record.reservationNote ??
-      "Si cambian viajeros, edades o fechas, conviene una cotizacion personalizada.",
+      "El precio publicado aplica para la ciudad de salida indicada. Si cambian viajeros, edades o ciudad de salida, conviene una cotizacion personalizada.",
   };
 }
 

@@ -33,9 +33,13 @@ export default async function PackageDetailPage({
             />
           </div>
 
-          <Badge className="bg-primary/10 text-primary hover:bg-primary/10">
-            {travelPackage.destination} · {travelPackage.location}
-          </Badge>
+          <div className="flex flex-wrap gap-2">
+            <Badge className="bg-primary/10 text-primary hover:bg-primary/10">
+              {travelPackage.destination} · {travelPackage.location}
+            </Badge>
+            <Badge variant="secondary">Salida desde {travelPackage.departureCity}</Badge>
+            <Badge variant="secondary">{travelPackage.includedTravelers}</Badge>
+          </div>
 
           <div className="space-y-4">
             <h1 className="text-4xl md:text-6xl">{travelPackage.name}</h1>
@@ -57,14 +61,14 @@ export default async function PackageDetailPage({
           </div>
 
           <div className="surface p-6">
-            <h2 className="text-2xl">Lo mejor de este viaje</h2>
+            <h2 className="text-2xl">Qué debes considerar antes de apartarlo</h2>
             <ul className="mt-4 grid gap-3 text-sm text-slate-600 md:grid-cols-2">
               <li>Precio publicado para {travelPackage.includedTravelers}</li>
-              <li>Reserva directa si estas condiciones te funcionan</li>
-              <li>Cotizacion personalizada si cambian viajeros o fechas</li>
-              <li>Seguimiento de documentos previos al viaje</li>
-              <li>Actualizaciones y detalles del itinerario</li>
-              <li>Consulta de pagos y comprobantes</li>
+              <li>Ciudad de salida incluida: {travelPackage.departureCity}</li>
+              <li>Reserva inmediata si estas condiciones sí te funcionan</li>
+              <li>Cotización personalizada si cambian viajeros o ciudad de salida</li>
+              <li>Seguimiento de pagos, documentos y mensajes desde tu portal</li>
+              <li>Actualizaciones y detalles del viaje en un solo lugar</li>
             </ul>
           </div>
         </div>
@@ -77,6 +81,7 @@ export default async function PackageDetailPage({
                 ${travelPackage.priceFrom.toLocaleString("es-MX")} MXN
               </p>
               <p className="mt-2 text-sm text-slate-500">Aplicable para {travelPackage.includedTravelers}</p>
+              <p className="mt-1 text-sm text-slate-500">Salida desde {travelPackage.departureCity}</p>
             </div>
             <div className="flex flex-wrap gap-2">
               <Badge variant="secondary">{travelPackage.duration}</Badge>
@@ -96,14 +101,14 @@ export default async function PackageDetailPage({
             <div className="space-y-3">
               {travelPackage.directBookable ? (
                 <Button asChild className="w-full">
-                  <Link href={`/reservar?package=${travelPackage.slug}`}>Reservar este paquete</Link>
+                  <Link href={`/reservar?package=${travelPackage.slug}`}>Reserva inmediata</Link>
                 </Button>
               ) : null}
               <Button asChild variant="outline" className="w-full">
-                <Link href={`/cotizar?package=${travelPackage.slug}`}>Solicitar cotizacion personalizada</Link>
+                <Link href={`/cotizar?package=${travelPackage.slug}`}>Solicitar cotización personalizada</Link>
               </Button>
               <Button asChild variant="ghost" className="w-full">
-                <Link href="/contacto">Hablar con administracion</Link>
+                <Link href="/contacto">Hablar por WhatsApp o correo</Link>
               </Button>
             </div>
           </CardContent>

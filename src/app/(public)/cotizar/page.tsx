@@ -18,7 +18,7 @@ export default async function QuoteRequestPage({
         <SectionHeading
           eyebrow="Solicitud de cotizacion"
           title="Solicita una cotizacion personalizada"
-          description="Usa este flujo cuando el paquete publicado no encaja exactamente con tus viajeros, fechas o condiciones deseadas."
+          description="Usa este flujo cuando necesitas otra ciudad de salida, fechas distintas, diferente ocupación o una combinación especial de servicios."
         />
         <Card className="surface border-0">
           <CardContent className="p-7">

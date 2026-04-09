@@ -7,7 +7,6 @@ const reservationSchema = z.object({
   firstName: z.string().min(2),
   email: z.string().email(),
   phone: z.string().optional(),
-  originCity: z.string().optional(),
   departureDate: z.string().optional(),
   notes: z.string().optional(),
 });
@@ -22,7 +21,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       ok: true,
       orderId: order.id,
-      message: `Reserva recibida. Tu pedido ${order.orderNumber} quedo creado y pendiente de anticipo.`,
+      message: `Reserva inmediata recibida. Tu pedido ${order.orderNumber} quedó creado y pendiente de anticipo.`,
     });
   } catch (error) {
     return NextResponse.json(

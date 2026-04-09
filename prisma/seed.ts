@@ -77,6 +77,7 @@ async function main() {
       summary: "4 noches frente al mar con traslados, hotel all inclusive y seguimiento antes de viajar.",
       description: "Incluye hospedaje, traslados y estructura base para cotizacion, pedido, pago y portal del cliente.",
       locationLabel: "Caribe Mexicano",
+      departureCity: "Ciudad de Mexico",
       heroImageUrl:
         "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
       galleryUrls: [
@@ -94,7 +95,7 @@ async function main() {
       includedAdults: 2,
       includedMinors: 0,
       directBookable: true,
-      reservationNote: "Si viajan 2 adultos bajo estas condiciones, pueden reservar de inmediato.",
+      reservationNote: "Precio publicado para salida desde Ciudad de Mexico. Si cambian ciudad de salida o viajeros, conviene cotizacion personalizada.",
       featured: true,
       publishedAt: new Date(),
     },
@@ -104,6 +105,7 @@ async function main() {
       summary: "4 noches frente al mar con traslados, hotel all inclusive y seguimiento antes de viajar.",
       description: "Incluye hospedaje, traslados y estructura base para cotizacion, pedido, pago y portal del cliente.",
       locationLabel: "Caribe Mexicano",
+      departureCity: "Ciudad de Mexico",
       heroImageUrl:
         "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80",
       galleryUrls: [
@@ -121,7 +123,7 @@ async function main() {
       includedAdults: 2,
       includedMinors: 0,
       directBookable: true,
-      reservationNote: "Si viajan 2 adultos bajo estas condiciones, pueden reservar de inmediato.",
+      reservationNote: "Precio publicado para salida desde Ciudad de Mexico. Si cambian ciudad de salida o viajeros, conviene cotizacion personalizada.",
       featured: true,
       publishedAt: new Date(),
     },

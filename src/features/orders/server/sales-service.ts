@@ -96,14 +96,13 @@ export async function createDirectReservation(input: {
   firstName: string;
   email: string;
   phone?: string;
-  originCity?: string;
   departureDate?: string;
   notes?: string;
 }) {
   const travelPackage = await getSalesPackageBySlug(input.packageSlug);
 
   if (!travelPackage || !travelPackage.directBookable) {
-    throw new Error("Este paquete no admite reserva directa.");
+    throw new Error("Este paquete no admite reserva inmediata con el precio publicado.");
   }
 
   const customer = await getOrCreateCustomer({
@@ -170,11 +169,11 @@ export async function createDirectReservation(input: {
       entityType: "Order",
       entityId: order.id,
       action: "DIRECT_RESERVATION_CREATED",
-      description: `Reserva directa creada para ${travelPackage.name}.`,
+      description: `Reserva inmediata creada para ${travelPackage.name}.`,
       actorType: "PUBLIC",
       metadata: {
         packageSlug: input.packageSlug,
-        originCity: input.originCity,
+        departureCity: travelPackage.departureCity,
       },
     },
   });
