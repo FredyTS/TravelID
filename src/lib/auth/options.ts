@@ -8,6 +8,7 @@ import { prisma } from "@/lib/db/prisma";
 import { adminRoles } from "@/lib/auth/roles";
 import { sendMagicLinkEmail } from "@/lib/email/transactional";
 import { env } from "@/lib/env";
+import { ensurePortalCustomerForUser } from "@/features/auth/server/customer-access";
 
 async function getUserPrimaryRole(userId: string) {
   const userRole = await prisma.userRole.findFirst({
@@ -162,6 +163,14 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user }) {
+      if (user.email) {
+        await ensurePortalCustomerForUser({
+          userId: user.id,
+          email: user.email,
+          name: user.name,
+        });
+      }
+
       await prisma.user.update({
         where: { id: user.id },
         data: {
