@@ -227,6 +227,25 @@ enum PaymentMethod {
   OTHER
 }
 
+enum EmailProvider {
+  MAILCHIMP_TRANSACTIONAL
+  RESEND
+  CONSOLE
+}
+
+enum EmailDeliveryStatus {
+  PENDING
+  QUEUED
+  SENT
+  DELIVERED
+  OPENED
+  CLICKED
+  BOUNCED
+  REJECTED
+  FAILED
+  COMPLAINED
+}
+
 enum ConversationThreadType {
   GENERAL
   ORDER
@@ -352,6 +371,7 @@ model Customer {
   conversationThreads ConversationThread[]
   conversationParticipants ConversationParticipant[]
   conversationMessages ConversationMessage[]
+  emailLogs        EmailDeliveryLog[]
 }
 
 model TravelerProfile {
@@ -416,6 +436,7 @@ model Inquiry {
   package                Package?      @relation(fields: [packageId], references: [id], onDelete: SetNull)
   requestedDestination   Destination?  @relation(fields: [requestedDestinationId], references: [id], onDelete: SetNull)
   quotes                 Quote[]
+  emailLogs              EmailDeliveryLog[]
 }
 
 model Destination {
@@ -757,6 +778,7 @@ model Quote {
   documents              Document[]
   payments               Payment[]
   conversationThreads    ConversationThread[]
+  emailLogs              EmailDeliveryLog[]
 }
 
 model QuoteTraveler {
@@ -835,6 +857,7 @@ model Order {
   vouchers             Voucher[]
   travelUpdates        TravelUpdate[]
   conversationThreads  ConversationThread[]
+  emailLogs            EmailDeliveryLog[]
 }
 
 model OrderItem {
@@ -1010,6 +1033,7 @@ model ConversationThread {
   quote         Quote?                    @relation(fields: [quoteId], references: [id], onDelete: Cascade)
   participants  ConversationParticipant[]
   messages      ConversationMessage[]
+  emailLogs     EmailDeliveryLog[]
 
   @@index([customerId, lastMessageAt])
 }
@@ -1083,6 +1107,60 @@ model Setting {
   scope     String   @default("GLOBAL")
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model EmailDeliveryLog {
+  id                   String              @id @default(cuid())
+  provider             EmailProvider
+  status               EmailDeliveryStatus @default(PENDING)
+  category             String
+  toEmail              String
+  subject              String
+  customerId           String?
+  inquiryId            String?
+  quoteId              String?
+  orderId              String?
+  conversationThreadId String?
+  providerMessageId    String?             @unique
+  providerEventType    String?
+  providerPayload      Json?
+  errorMessage         String?
+  sentAt               DateTime?
+  deliveredAt          DateTime?
+  openedAt             DateTime?
+  clickedAt            DateTime?
+  bouncedAt            DateTime?
+  lastEventAt          DateTime?
+  createdAt            DateTime            @default(now())
+  updatedAt            DateTime            @updatedAt
+  customer             Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  inquiry              Inquiry?            @relation(fields: [inquiryId], references: [id], onDelete: SetNull)
+  quote                Quote?              @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  order                Order?              @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  conversationThread   ConversationThread? @relation(fields: [conversationThreadId], references: [id], onDelete: SetNull)
+  webhookEvents        EmailWebhookEventLog[]
+
+  @@index([toEmail, createdAt])
+  @@index([status, createdAt])
+  @@index([quoteId, createdAt])
+  @@index([orderId, createdAt])
+  @@index([inquiryId, createdAt])
+}
+
+model EmailWebhookEventLog {
+  id                String         @id @default(cuid())
+  provider          EmailProvider
+  eventType         String
+  providerEventId   String?
+  providerMessageId String?
+  emailLogId        String?
+  payload           Json?
+  createdAt         DateTime       @default(now())
+  emailLog          EmailDeliveryLog? @relation(fields: [emailLogId], references: [id], onDelete: SetNull)
+
+  @@index([provider, createdAt])
+  @@index([providerMessageId])
+  @@index([emailLogId, createdAt])
 }
 
 model StripeEventLog {

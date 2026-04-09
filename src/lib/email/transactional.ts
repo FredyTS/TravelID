@@ -1,61 +1,210 @@
+import { EmailDeliveryStatus, EmailProvider } from "@prisma/client";
 import { Resend } from "resend";
 import { env } from "@/lib/env";
+import { prisma } from "@/lib/db/prisma";
 
 const resend = env.resendApiKey ? new Resend(env.resendApiKey) : null;
+
+type EmailTrackingInput = {
+  category: string;
+  customerId?: string;
+  inquiryId?: string;
+  quoteId?: string;
+  orderId?: string;
+  conversationThreadId?: string;
+  metadata?: Record<string, unknown>;
+};
 
 type SendEmailInput = {
   to: string;
   subject: string;
   html: string;
   text: string;
+  tracking?: EmailTrackingInput;
 };
 
-export async function sendTransactionalEmail(input: SendEmailInput) {
-  if (env.mailchimpTransactionalApiKey) {
-    const response = await fetch("https://mandrillapp.com/api/1.0/messages/send.json", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        key: env.mailchimpTransactionalApiKey,
-        message: {
-          html: input.html,
-          text: input.text,
-          subject: input.subject,
-          from_email: env.mailchimpTransactionalFromEmail,
-          from_name: env.mailchimpTransactionalFromName,
-          to: [{ email: input.to, type: "to" }],
-        },
-      }),
-    });
+type MailchimpSendResult = {
+  email: string;
+  status: string;
+  _id?: string;
+  reject_reason?: string | null;
+  queued_reason?: string | null;
+};
 
-    if (!response.ok) {
-      const errorBody = await response.text();
-      throw new Error(`Mailchimp Transactional devolvio un error: ${errorBody}`);
+function getConfiguredProvider() {
+  if (env.mailchimpTransactionalApiKey) {
+    return EmailProvider.MAILCHIMP_TRANSACTIONAL;
+  }
+
+  if (resend) {
+    return EmailProvider.RESEND;
+  }
+
+  return EmailProvider.CONSOLE;
+}
+
+function mapMailchimpStatus(status?: string | null) {
+  switch (status) {
+    case "queued":
+      return EmailDeliveryStatus.QUEUED;
+    case "sent":
+    case "scheduled":
+      return EmailDeliveryStatus.SENT;
+    case "rejected":
+    case "invalid":
+      return EmailDeliveryStatus.REJECTED;
+    default:
+      return EmailDeliveryStatus.PENDING;
+  }
+}
+
+async function createEmailLog(input: SendEmailInput) {
+  return prisma.emailDeliveryLog.create({
+    data: {
+      provider: getConfiguredProvider(),
+      status: EmailDeliveryStatus.PENDING,
+      category: input.tracking?.category ?? "TRANSACTIONAL",
+      toEmail: input.to,
+      subject: input.subject,
+      customerId: input.tracking?.customerId,
+      inquiryId: input.tracking?.inquiryId,
+      quoteId: input.tracking?.quoteId,
+      orderId: input.tracking?.orderId,
+      conversationThreadId: input.tracking?.conversationThreadId,
+      providerPayload: input.tracking?.metadata ? JSON.parse(JSON.stringify(input.tracking.metadata)) : undefined,
+    },
+  });
+}
+
+async function markEmailFailed(emailLogId: string, message: string) {
+  await prisma.emailDeliveryLog.update({
+    where: { id: emailLogId },
+    data: {
+      status: EmailDeliveryStatus.FAILED,
+      errorMessage: message,
+      lastEventAt: new Date(),
+    },
+  });
+}
+
+export async function sendTransactionalEmail(input: SendEmailInput) {
+  const emailLog = await createEmailLog(input);
+
+  try {
+    if (env.mailchimpTransactionalApiKey) {
+      const response = await fetch("https://mandrillapp.com/api/1.0/messages/send.json", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          key: env.mailchimpTransactionalApiKey,
+          message: {
+            html: input.html,
+            text: input.text,
+            subject: input.subject,
+            from_email: env.mailchimpTransactionalFromEmail,
+            from_name: env.mailchimpTransactionalFromName,
+            to: [{ email: input.to, type: "to" }],
+            metadata: {
+              emailLogId: emailLog.id,
+              quoteId: input.tracking?.quoteId,
+              orderId: input.tracking?.orderId,
+              inquiryId: input.tracking?.inquiryId,
+              customerId: input.tracking?.customerId,
+              category: input.tracking?.category,
+            },
+            tags: [input.tracking?.category ?? "transactional"],
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        const errorBody = await response.text();
+        await markEmailFailed(emailLog.id, `Mailchimp Transactional devolvio un error: ${errorBody}`);
+        throw new Error(`Mailchimp Transactional devolvio un error: ${errorBody}`);
+      }
+
+      const result = (await response.json()) as MailchimpSendResult[];
+      const primaryResult = result[0];
+
+      await prisma.emailDeliveryLog.update({
+        where: { id: emailLog.id },
+        data: {
+          provider: EmailProvider.MAILCHIMP_TRANSACTIONAL,
+          providerMessageId: primaryResult?._id ?? undefined,
+          providerEventType: primaryResult?.status ?? "accepted",
+          providerPayload: JSON.parse(JSON.stringify(result)),
+          status: mapMailchimpStatus(primaryResult?.status),
+          errorMessage: primaryResult?.reject_reason ?? primaryResult?.queued_reason ?? undefined,
+          sentAt:
+            primaryResult?.status === "sent" || primaryResult?.status === "queued" || primaryResult?.status === "scheduled"
+              ? new Date()
+              : undefined,
+          lastEventAt: new Date(),
+        },
+      });
+
+      return {
+        delivered: primaryResult?.status === "sent",
+        provider: "mailchimp" as const,
+        emailLogId: emailLog.id,
+      };
     }
 
-    return { delivered: true, provider: "mailchimp" as const };
-  }
+    if (!resend) {
+      console.info("[email:dev-fallback]", {
+        to: input.to,
+        subject: input.subject,
+        text: input.text,
+      });
 
-  if (!resend) {
-    console.info("[email:dev-fallback]", {
+      await prisma.emailDeliveryLog.update({
+        where: { id: emailLog.id },
+        data: {
+          provider: EmailProvider.CONSOLE,
+          status: EmailDeliveryStatus.SENT,
+          sentAt: new Date(),
+          lastEventAt: new Date(),
+          providerEventType: "dev-fallback",
+          providerPayload: {
+            to: input.to,
+            subject: input.subject,
+            text: input.text,
+          },
+        },
+      });
+
+      return { delivered: false, provider: "console" as const, emailLogId: emailLog.id };
+    }
+
+    const resendResult = await resend.emails.send({
+      from: env.emailFrom,
       to: input.to,
       subject: input.subject,
+      html: input.html,
       text: input.text,
     });
-    return { delivered: false, provider: "console" as const };
+
+    await prisma.emailDeliveryLog.update({
+      where: { id: emailLog.id },
+      data: {
+        provider: EmailProvider.RESEND,
+        status: EmailDeliveryStatus.SENT,
+        providerMessageId: "data" in resendResult && resendResult.data?.id ? resendResult.data.id : undefined,
+        providerPayload: JSON.parse(JSON.stringify(resendResult)),
+        providerEventType: "accepted",
+        sentAt: new Date(),
+        lastEventAt: new Date(),
+      },
+    });
+
+    return { delivered: true, provider: "resend" as const, emailLogId: emailLog.id };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : "No fue posible enviar el correo.";
+    await markEmailFailed(emailLog.id, message);
+    throw error;
   }
-
-  await resend.emails.send({
-    from: env.emailFrom,
-    to: input.to,
-    subject: input.subject,
-    html: input.html,
-    text: input.text,
-  });
-
-  return { delivered: true, provider: "resend" as const };
 }
 
 export async function sendMagicLinkEmail(input: {
@@ -80,6 +229,9 @@ export async function sendMagicLinkEmail(input: {
         <p><a href="${input.url}">${input.url}</a></p>
       </div>
     `,
+    tracking: {
+      category: "MAGIC_LINK",
+    },
   });
 }
 
@@ -90,6 +242,7 @@ export async function sendConversationNotificationEmail(input: {
   preview: string;
   ctaUrl: string;
   ctaLabel: string;
+  tracking?: EmailTrackingInput;
 }) {
   const greeting = input.recipientName ? `Hola ${input.recipientName},` : "Hola,";
 
@@ -110,6 +263,10 @@ export async function sendConversationNotificationEmail(input: {
         <p><a href="${input.ctaUrl}">${input.ctaUrl}</a></p>
       </div>
     `,
+    tracking: {
+      category: "CONVERSATION_NOTIFICATION",
+      ...input.tracking,
+    },
   });
 }
 
@@ -122,6 +279,7 @@ export async function sendPortalTrackingEmail(input: {
   ctaLabel: string;
   secondaryUrl?: string;
   secondaryLabel?: string;
+  tracking?: EmailTrackingInput;
 }) {
   const greeting = input.recipientName ? `Hola ${input.recipientName},` : "Hola,";
 
@@ -160,5 +318,9 @@ export async function sendPortalTrackingEmail(input: {
         </div>
       </div>
     `,
+    tracking: {
+      category: "PORTAL_TRACKING",
+      ...input.tracking,
+    },
   });
 }
