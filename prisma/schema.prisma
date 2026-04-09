@@ -1,0 +1,932 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserStatus {
+  ACTIVE
+  INVITED
+  SUSPENDED
+}
+
+enum RoleKey {
+  SUPERADMIN
+  ADMIN
+  AGENT
+  CLIENT
+}
+
+enum CustomerType {
+  PERSON
+  COMPANY
+}
+
+enum CustomerStatus {
+  ACTIVE
+  INACTIVE
+  VIP
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  QUALIFIED
+  QUOTED
+  WON
+  LOST
+}
+
+enum InquiryType {
+  CONTACT
+  QUOTE_REQUEST
+  WHATSAPP
+  MANUAL
+}
+
+enum InquiryStatus {
+  NEW
+  ASSIGNED
+  IN_PROGRESS
+  QUOTED
+  CLOSED
+}
+
+enum PackageOriginType {
+  CATALOG
+  PRIVATE_TEMPLATE
+}
+
+enum PackageVisibility {
+  PUBLIC
+  PRIVATE
+  INTERNAL
+}
+
+enum PricingMode {
+  PER_PERSON
+  PER_ROOM
+  FIXED_GROUP
+}
+
+enum TravelType {
+  BEACH
+  CITY
+  ADVENTURE
+  HONEYMOON
+  FAMILY
+  CRUISE
+  CUSTOM
+}
+
+enum PackageComponentType {
+  HOTEL
+  FLIGHT
+  TRANSFER
+  TOUR
+  INSURANCE
+  FEE
+  OTHER
+}
+
+enum TravelerType {
+  ADULT
+  MINOR
+  INFANT
+}
+
+enum PricingRuleType {
+  BASE
+  DISCOUNT
+  SURCHARGE
+}
+
+enum DiscountType {
+  PERCENT
+  FIXED
+}
+
+enum PromotionAppliesTo {
+  PACKAGE
+  DESTINATION
+  ORDER
+  QUOTE
+}
+
+enum QuoteSource {
+  CATALOG
+  MANUAL
+  INQUIRY
+}
+
+enum QuoteStatus {
+  DRAFT
+  SENT
+  VIEWED
+  APPROVED
+  REJECTED
+  EXPIRED
+  CONVERTED
+  CANCELLED
+}
+
+enum QuoteVisibility {
+  PUBLIC_LINK
+  AUTH_PORTAL
+  INTERNAL
+}
+
+enum QuoteItemSourceType {
+  PACKAGE_COMPONENT
+  MANUAL
+}
+
+enum OrderStatus {
+  PENDING_CONFIRMATION
+  AWAITING_DEPOSIT
+  PARTIALLY_PAID
+  PAID
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum FulfillmentStatus {
+  NOT_STARTED
+  BOOKING_IN_PROGRESS
+  BOOKED
+  DOCS_PENDING
+  READY_TO_TRAVEL
+  TRAVELED
+}
+
+enum OrderCreatedFrom {
+  QUOTE
+  MANUAL
+  CATALOG
+}
+
+enum BookingType {
+  HOTEL
+  FLIGHT
+  TRANSFER
+  TOUR
+  OTHER
+}
+
+enum BookingStatus {
+  PENDING
+  REQUESTED
+  CONFIRMED
+  ISSUE
+  CANCELLED
+}
+
+enum PaymentDueType {
+  DEPOSIT
+  BALANCE
+  CUSTOM
+}
+
+enum PaymentScheduleStatus {
+  PENDING
+  PAID
+  OVERDUE
+  CANCELLED
+}
+
+enum PaymentProvider {
+  STRIPE
+  MANUAL
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCEEDED
+  FAILED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  CANCELLED
+}
+
+enum PaymentMethod {
+  CARD
+  TRANSFER
+  CASH
+  OTHER
+}
+
+enum DocumentType {
+  VOUCHER
+  INVOICE
+  RECEIPT
+  PASSPORT_COPY
+  ITINERARY
+  PAYMENT_PROOF
+  OTHER
+}
+
+enum DocumentVisibility {
+  INTERNAL
+  CLIENT
+}
+
+enum VoucherStatus {
+  DRAFT
+  ISSUED
+  REVOKED
+}
+
+enum TravelUpdateVisibility {
+  INTERNAL
+  CLIENT
+}
+
+enum AuditOperation {
+  CREATE
+  UPDATE
+  DELETE
+  STATUS_CHANGE
+  LOGIN
+  EXPORT
+  IMPORT
+}
+
+model User {
+  id                String        @id @default(cuid())
+  email             String        @unique
+  emailVerified     DateTime?
+  passwordHash      String?
+  firstName         String
+  lastName          String
+  phone             String?
+  status            UserStatus    @default(ACTIVE)
+  lastLoginAt       DateTime?
+  customerId        String?       @unique
+  image             String?
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  accounts          Account[]
+  sessions          Session[]
+  customer          Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  roles             UserRole[]
+  assignedCustomers Customer[]    @relation("CustomerAssignedAgent")
+  assignedLeads     Lead[]        @relation("LeadAssignedAgent")
+  assignedInquiries Inquiry[]     @relation("InquiryAssignedAgent")
+  assignedQuotes    Quote[]       @relation("QuoteAssignedAgent")
+  assignedOrders    Order[]       @relation("OrderAssignedAgent")
+  recordedPayments  Payment[]     @relation("PaymentRecorder")
+  uploadedDocuments Document[]    @relation("DocumentUploader")
+  createdUpdates    TravelUpdate[] @relation("TravelUpdateCreator")
+  createdRefunds    Refund[]      @relation("RefundCreator")
+  activityLogs      ActivityLog[]
+  auditLogs         AuditLog[]
+}
+
+model Role {
+  id        String    @id @default(cuid())
+  key       RoleKey   @unique
+  name      String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  users     UserRole[]
+}
+
+model UserRole {
+  userId     String
+  roleId     String
+  assignedAt DateTime @default(now())
+  role       Role     @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model Customer {
+  id               String            @id @default(cuid())
+  type             CustomerType      @default(PERSON)
+  firstName        String?
+  lastName         String?
+  companyName      String?
+  email            String?           @unique
+  phone            String?
+  whatsapp         String?
+  source           String?
+  notes            String?
+  status           CustomerStatus    @default(ACTIVE)
+  assignedAgentId  String?
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  assignedAgent    User?             @relation("CustomerAssignedAgent", fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  user             User?
+  travelerProfiles TravelerProfile[]
+  inquiries        Inquiry[]
+  quotes           Quote[]
+  orders           Order[]
+  documents        Document[]
+}
+
+model TravelerProfile {
+  id               String   @id @default(cuid())
+  customerId       String
+  firstName        String
+  lastName         String
+  birthDate        DateTime?
+  gender           String?
+  passportNumber   String?
+  passportExpiry   DateTime?
+  nationality      String?
+  dietaryNotes     String?
+  medicalNotes     String?
+  emergencyContact String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  customer         Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  quoteTravelers   QuoteTraveler[]
+}
+
+model Lead {
+  id              String      @id @default(cuid())
+  firstName       String
+  lastName        String?
+  email           String?
+  phone           String?
+  source          String?
+  status          LeadStatus  @default(NEW)
+  interestSummary String?
+  assignedAgentId String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  assignedAgent   User?       @relation("LeadAssignedAgent", fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  inquiries       Inquiry[]
+}
+
+model Inquiry {
+  id                     String        @id @default(cuid())
+  leadId                 String?
+  customerId             String?
+  type                   InquiryType
+  channel                String
+  packageId              String?
+  requestedDestinationId String?
+  originCity             String?
+  tentativeDate          DateTime?
+  adults                 Int           @default(2)
+  minors                 Int           @default(0)
+  minorAges              Json?
+  budgetMin              Decimal?      @db.Decimal(10, 2)
+  budgetMax              Decimal?      @db.Decimal(10, 2)
+  notes                  String?
+  status                 InquiryStatus @default(NEW)
+  assignedAgentId        String?
+  createdAt              DateTime      @default(now())
+  updatedAt              DateTime      @updatedAt
+  assignedAgent          User?         @relation("InquiryAssignedAgent", fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  customer               Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  lead                   Lead?         @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  package                Package?      @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  requestedDestination   Destination?  @relation(fields: [requestedDestinationId], references: [id], onDelete: SetNull)
+  quotes                 Quote[]
+}
+
+model Destination {
+  id             String    @id @default(cuid())
+  name           String
+  slug           String    @unique
+  country        String
+  region         String?
+  description    String?
+  heroImageUrl   String?
+  isActive       Boolean   @default(true)
+  seoTitle       String?
+  seoDescription String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  hotels         Hotel[]
+  packages       Package[]
+  inquiries      Inquiry[]
+  promotions     Promotion[]
+  quotes         Quote[]
+}
+
+model Supplier {
+  id         String             @id @default(cuid())
+  code       String?            @unique
+  name       String
+  email      String?
+  phone      String?
+  website    String?
+  notes      String?
+  createdAt  DateTime           @default(now())
+  updatedAt  DateTime           @updatedAt
+  hotels     Hotel[]
+  packages   Package[]
+  components PackageComponent[]
+  bookings   Booking[]
+}
+
+model Hotel {
+  id            String      @id @default(cuid())
+  supplierId    String?
+  destinationId String
+  name          String
+  slug          String
+  category      String?
+  address       String?
+  description   String?
+  amenities     Json?
+  isActive      Boolean     @default(true)
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  destination   Destination @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  supplier      Supplier?   @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  images        HotelImage[]
+  packages      Package[]
+
+  @@unique([destinationId, slug])
+}
+
+model HotelImage {
+  id        String   @id @default(cuid())
+  hotelId   String
+  url       String
+  alt       String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  hotel     Hotel    @relation(fields: [hotelId], references: [id], onDelete: Cascade)
+}
+
+model MealPlan {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  packages    Package[]
+}
+
+model Package {
+  id             String             @id @default(cuid())
+  destinationId  String
+  hotelId        String?
+  supplierId     String?
+  mealPlanId     String?
+  name           String
+  slug           String             @unique
+  summary        String
+  description    String
+  durationDays   Int
+  durationNights Int
+  travelType     TravelType
+  originType     PackageOriginType  @default(CATALOG)
+  visibility     PackageVisibility  @default(PUBLIC)
+  baseCurrency   String             @default("MXN")
+  basePriceFrom  Decimal?           @db.Decimal(10, 2)
+  pricingMode    PricingMode        @default(PER_PERSON)
+  minTravelers   Int                @default(1)
+  maxTravelers   Int?
+  isActive       Boolean            @default(true)
+  featured       Boolean            @default(false)
+  publishedAt    DateTime?
+  validFrom      DateTime?
+  validTo        DateTime?
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+  destination    Destination        @relation(fields: [destinationId], references: [id], onDelete: Cascade)
+  hotel          Hotel?             @relation(fields: [hotelId], references: [id], onDelete: SetNull)
+  mealPlan       MealPlan?          @relation(fields: [mealPlanId], references: [id], onDelete: SetNull)
+  supplier       Supplier?          @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  components     PackageComponent[]
+  pricingRules   PackagePricingRule[]
+  promotions     Promotion[]
+  images         PackageImage[]
+  inquiries      Inquiry[]
+  quotes         Quote[]
+}
+
+model PackageImage {
+  id        String   @id @default(cuid())
+  packageId String
+  url       String
+  alt       String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  package   Package  @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+model PackageComponent {
+  id          String               @id @default(cuid())
+  packageId   String
+  supplierId  String?
+  type        PackageComponentType
+  title       String
+  description String?
+  sortOrder   Int                  @default(0)
+  isIncluded  Boolean              @default(true)
+  metadata    Json?
+  package     Package              @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  supplier    Supplier?            @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  quoteItems  QuoteItem[]
+}
+
+model PackagePricingRule {
+  id            String          @id @default(cuid())
+  packageId     String
+  travelerType  TravelerType
+  occupancyType String?
+  minQty        Int             @default(1)
+  maxQty        Int?
+  amount        Decimal         @db.Decimal(10, 2)
+  currency      String          @default("MXN")
+  ruleType      PricingRuleType @default(BASE)
+  startsAt      DateTime?
+  endsAt        DateTime?
+  conditions    Json?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  package       Package         @relation(fields: [packageId], references: [id], onDelete: Cascade)
+}
+
+model Promotion {
+  id            String              @id @default(cuid())
+  name          String
+  slug          String              @unique
+  description   String?
+  discountType  DiscountType
+  discountValue Decimal             @db.Decimal(10, 2)
+  appliesTo     PromotionAppliesTo
+  packageId     String?
+  destinationId String?
+  code          String?
+  startsAt      DateTime
+  endsAt        DateTime
+  isPublic      Boolean             @default(true)
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  destination   Destination?        @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  package       Package?            @relation(fields: [packageId], references: [id], onDelete: SetNull)
+}
+
+model Quote {
+  id                     String          @id @default(cuid())
+  quoteNumber            String          @unique
+  source                 QuoteSource
+  customerId             String?
+  inquiryId              String?
+  packageId              String?
+  destinationId          String?
+  assignedAgentId        String
+  status                 QuoteStatus     @default(DRAFT)
+  visibility             QuoteVisibility @default(AUTH_PORTAL)
+  title                  String
+  originCity             String?
+  departureDateTentative DateTime?
+  returnDateTentative    DateTime?
+  adults                 Int             @default(2)
+  minors                 Int             @default(0)
+  minorAges              Json?
+  subtotal               Decimal         @default(0) @db.Decimal(10, 2)
+  discountTotal          Decimal         @default(0) @db.Decimal(10, 2)
+  taxTotal               Decimal         @default(0) @db.Decimal(10, 2)
+  grandTotal             Decimal         @default(0) @db.Decimal(10, 2)
+  depositRequired        Decimal         @default(0) @db.Decimal(10, 2)
+  balanceDue             Decimal         @default(0) @db.Decimal(10, 2)
+  validUntil             DateTime?
+  internalNotes          String?
+  customerNotes          String?
+  shareToken             String?         @unique
+  sentAt                 DateTime?
+  viewedAt               DateTime?
+  approvedAt             DateTime?
+  convertedOrderId       String?         @unique
+  createdAt              DateTime        @default(now())
+  updatedAt              DateTime        @updatedAt
+  assignedAgent          User            @relation("QuoteAssignedAgent", fields: [assignedAgentId], references: [id], onDelete: Restrict)
+  customer               Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  destination            Destination?    @relation(fields: [destinationId], references: [id], onDelete: SetNull)
+  inquiry                Inquiry?        @relation(fields: [inquiryId], references: [id], onDelete: SetNull)
+  package                Package?        @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  originatingOrder       Order?
+  convertedOrder         Order?          @relation("QuoteConvertedOrder", fields: [convertedOrderId], references: [id], onDelete: SetNull)
+  travelers              QuoteTraveler[]
+  items                  QuoteItem[]
+  documents              Document[]
+  payments               Payment[]
+}
+
+model QuoteTraveler {
+  id                String           @id @default(cuid())
+  quoteId           String
+  travelerProfileId String?
+  firstName         String
+  lastName          String
+  travelerType      TravelerType
+  age               Int?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  quote             Quote            @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  travelerProfile   TravelerProfile? @relation(fields: [travelerProfileId], references: [id], onDelete: SetNull)
+}
+
+model QuoteItem {
+  id                 String              @id @default(cuid())
+  quoteId            String
+  packageComponentId String?
+  sourceType         QuoteItemSourceType @default(MANUAL)
+  itemType           PackageComponentType
+  title              String
+  description        String?
+  unitPrice          Decimal             @db.Decimal(10, 2)
+  quantity           Int                 @default(1)
+  lineTotal          Decimal             @db.Decimal(10, 2)
+  costAmount         Decimal?            @db.Decimal(10, 2)
+  currency           String              @default("MXN")
+  sortOrder          Int                 @default(0)
+  metadata           Json?
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  packageComponent   PackageComponent?   @relation(fields: [packageComponentId], references: [id], onDelete: SetNull)
+  quote              Quote               @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  orderItems         OrderItem[]
+}
+
+model Order {
+  id                   String            @id @default(cuid())
+  orderNumber          String            @unique
+  customerId           String
+  quoteId              String?           @unique
+  assignedAgentId      String?
+  status               OrderStatus       @default(PENDING_CONFIRMATION)
+  fulfillmentStatus    FulfillmentStatus @default(NOT_STARTED)
+  title                String
+  departureDate        DateTime?
+  returnDate           DateTime?
+  subtotal             Decimal           @default(0) @db.Decimal(10, 2)
+  discountTotal        Decimal           @default(0) @db.Decimal(10, 2)
+  taxTotal             Decimal           @default(0) @db.Decimal(10, 2)
+  grandTotal           Decimal           @default(0) @db.Decimal(10, 2)
+  paidTotal            Decimal           @default(0) @db.Decimal(10, 2)
+  balanceDue           Decimal           @default(0) @db.Decimal(10, 2)
+  currency             String            @default("MXN")
+  depositDueDate       DateTime?
+  finalPaymentDueDate  DateTime?
+  customerVisibleNotes String?
+  internalNotes        String?
+  portalEnabled        Boolean           @default(true)
+  createdFrom          OrderCreatedFrom  @default(QUOTE)
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+  assignedAgent        User?             @relation("OrderAssignedAgent", fields: [assignedAgentId], references: [id], onDelete: SetNull)
+  customer             Customer          @relation(fields: [customerId], references: [id], onDelete: Restrict)
+  originatingQuote     Quote?            @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  convertedFromQuote   Quote?            @relation("QuoteConvertedOrder")
+  items                OrderItem[]
+  bookings             Booking[]
+  paymentSchedules     PaymentSchedule[]
+  payments             Payment[]
+  itinerary            Itinerary?
+  documents            Document[]
+  vouchers             Voucher[]
+  travelUpdates        TravelUpdate[]
+}
+
+model OrderItem {
+  id          String               @id @default(cuid())
+  orderId     String
+  quoteItemId String?
+  itemType    PackageComponentType
+  title       String
+  description String?
+  unitPrice   Decimal              @db.Decimal(10, 2)
+  quantity    Int                  @default(1)
+  lineTotal   Decimal              @db.Decimal(10, 2)
+  currency    String               @default("MXN")
+  sortOrder   Int                  @default(0)
+  metadata    Json?
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+  order       Order                @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  quoteItem   QuoteItem?           @relation(fields: [quoteItemId], references: [id], onDelete: SetNull)
+  bookings    Booking[]
+}
+
+model Booking {
+  id               String        @id @default(cuid())
+  orderId          String
+  orderItemId      String?
+  supplierId       String?
+  bookingType      BookingType
+  status           BookingStatus @default(PENDING)
+  confirmationCode String?
+  bookedAt         DateTime?
+  travelStartDate  DateTime?
+  travelEndDate    DateTime?
+  notes            String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  order            Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  orderItem        OrderItem?    @relation(fields: [orderItemId], references: [id], onDelete: SetNull)
+  supplier         Supplier?     @relation(fields: [supplierId], references: [id], onDelete: SetNull)
+  vouchers         Voucher[]
+}
+
+model PaymentSchedule {
+  id        String                @id @default(cuid())
+  orderId   String
+  dueType   PaymentDueType
+  dueDate   DateTime
+  amount    Decimal               @db.Decimal(10, 2)
+  currency  String                @default("MXN")
+  status    PaymentScheduleStatus @default(PENDING)
+  createdAt DateTime              @default(now())
+  updatedAt DateTime              @updatedAt
+  order     Order                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  payments  Payment[]
+}
+
+model Payment {
+  id                        String           @id @default(cuid())
+  orderId                   String
+  quoteId                   String?
+  paymentScheduleId         String?
+  recordedByUserId          String?
+  evidenceDocumentId        String?
+  provider                  PaymentProvider
+  providerPaymentIntentId   String?          @unique
+  providerCheckoutSessionId String?          @unique
+  amount                    Decimal          @db.Decimal(10, 2)
+  currency                  String           @default("MXN")
+  status                    PaymentStatus    @default(PENDING)
+  method                    PaymentMethod    @default(CARD)
+  paidAt                    DateTime?
+  rawResponse               Json?
+  createdAt                 DateTime         @default(now())
+  updatedAt                 DateTime         @updatedAt
+  evidenceDocument          Document?        @relation("PaymentEvidenceDocument", fields: [evidenceDocumentId], references: [id], onDelete: SetNull)
+  order                     Order            @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  paymentSchedule           PaymentSchedule? @relation(fields: [paymentScheduleId], references: [id], onDelete: SetNull)
+  quote                     Quote?           @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  recordedByUser            User?            @relation("PaymentRecorder", fields: [recordedByUserId], references: [id], onDelete: SetNull)
+  refunds                   Refund[]
+}
+
+model Refund {
+  id               String        @id @default(cuid())
+  paymentId        String
+  createdByUserId  String?
+  amount           Decimal       @db.Decimal(10, 2)
+  reason           String?
+  status           PaymentStatus @default(PENDING)
+  providerRefundId String?       @unique
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  createdByUser    User?         @relation("RefundCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  payment          Payment       @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+}
+
+model Itinerary {
+  id             String   @id @default(cuid())
+  orderId        String   @unique
+  title          String
+  summary        String?
+  structuredData Json?
+  version        Int      @default(1)
+  isPublished    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  order          Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id               String             @id @default(cuid())
+  customerId       String?
+  orderId          String?
+  quoteId          String?
+  uploadedByUserId String?
+  type             DocumentType
+  name             String
+  storageKey       String
+  fileName         String
+  mimeType         String
+  sizeBytes        Int
+  visibility       DocumentVisibility @default(INTERNAL)
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
+  customer         Customer?          @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  order            Order?             @relation(fields: [orderId], references: [id], onDelete: SetNull)
+  quote            Quote?             @relation(fields: [quoteId], references: [id], onDelete: SetNull)
+  uploadedByUser   User?              @relation("DocumentUploader", fields: [uploadedByUserId], references: [id], onDelete: SetNull)
+  paymentEvidences Payment[]          @relation("PaymentEvidenceDocument")
+  vouchers         Voucher[]
+}
+
+model Voucher {
+  id            String        @id @default(cuid())
+  orderId       String
+  bookingId     String?
+  documentId    String        @unique
+  voucherNumber String?
+  status        VoucherStatus @default(DRAFT)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  booking       Booking?      @relation(fields: [bookingId], references: [id], onDelete: SetNull)
+  document      Document      @relation(fields: [documentId], references: [id], onDelete: Cascade)
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model TravelUpdate {
+  id              String                 @id @default(cuid())
+  orderId         String
+  createdByUserId String?
+  title           String
+  message         String
+  visibility      TravelUpdateVisibility @default(INTERNAL)
+  publishedAt     DateTime?
+  createdAt       DateTime               @default(now())
+  updatedAt       DateTime               @updatedAt
+  createdByUser   User?                  @relation("TravelUpdateCreator", fields: [createdByUserId], references: [id], onDelete: SetNull)
+  order           Order                  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id          String   @id @default(cuid())
+  entityType  String
+  entityId    String
+  action      String
+  description String
+  metadata    Json?
+  actorUserId String?
+  actorType   String?
+  createdAt   DateTime @default(now())
+  actorUser   User?    @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id          String         @id @default(cuid())
+  entityType  String
+  entityId    String
+  operation   AuditOperation
+  before      Json?
+  after       Json?
+  actorUserId String?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime       @default(now())
+  actorUser   User?          @relation(fields: [actorUserId], references: [id], onDelete: SetNull)
+}
+
+model Setting {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     Json
+  scope     String   @default("GLOBAL")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model StripeEventLog {
+  id          String   @id @default(cuid())
+  eventId     String   @unique
+  eventType   String
+  processedAt DateTime @default(now())
+  payload     Json?
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
