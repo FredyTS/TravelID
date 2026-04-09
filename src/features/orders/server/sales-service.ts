@@ -36,6 +36,14 @@ function buildIncludedTravelersLabel(input: {
   return parts.join(" y ");
 }
 
+function roundCurrency(value: number) {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.min(Math.max(value, min), max);
+}
+
 export async function getDefaultAdminUserId() {
   const user = await prisma.user.findFirst({
     where: {
@@ -203,6 +211,7 @@ export async function createAdminQuote(input: {
   subtotal: number;
   discountTotal?: number;
   depositRequired?: number;
+  depositPercentage?: number;
   validUntil?: string;
   customerNotes?: string;
   proposalData?: QuoteProposalData | null;
@@ -230,10 +239,6 @@ export async function createAdminQuote(input: {
   await ensureCustomerPortalAccess(customer.id);
 
   const matchedPackage = input.packageSlug ? await getSalesPackageBySlug(input.packageSlug) : null;
-  const subtotal = input.subtotal;
-  const discountTotal = input.discountTotal ?? 0;
-  const grandTotal = Math.max(subtotal - discountTotal, 0);
-  const depositRequired = input.depositRequired ?? Math.round(grandTotal * 0.3);
   const proposalHtml = input.proposalData ? renderQuoteProposalHtml(input.proposalData) : null;
 
   const lineItems =
@@ -258,9 +263,10 @@ export async function createAdminQuote(input: {
             description: matchedPackage
               ? `${matchedPackage.destination.name} · ${buildIncludedTravelersLabel(matchedPackage)}`
               : "Cotizacion personalizada",
-            unitPrice: grandTotal,
+            unitPrice: input.subtotal ?? 0,
             quantity: 1,
-            lineTotal: grandTotal,
+            lineTotal: input.subtotal ?? 0,
+            currency: "MXN",
             metadata: (input.proposalData
               ? {
                   proposalHotel: input.proposalData.hotels[0] ?? null,
@@ -270,6 +276,15 @@ export async function createAdminQuote(input: {
               : undefined) as Prisma.InputJsonValue | undefined,
           },
         ];
+
+  const subtotal = roundCurrency(lineItems.reduce((sum, item) => sum + Number(item.lineTotal), 0));
+  const discountTotal = roundCurrency(Math.min(input.discountTotal ?? 0, subtotal));
+  const grandTotal = roundCurrency(Math.max(subtotal - discountTotal, 0));
+  const depositPercentage = clamp(input.depositPercentage ?? 30, 0, 100);
+  const depositRequired = roundCurrency(
+    Math.min(input.depositRequired ?? grandTotal * (depositPercentage / 100), grandTotal),
+  );
+  const balanceDue = roundCurrency(Math.max(grandTotal - depositRequired, 0));
 
   const quote = await prisma.quote.create({
     data: {
@@ -290,7 +305,7 @@ export async function createAdminQuote(input: {
       discountTotal,
       grandTotal,
       depositRequired,
-      balanceDue: grandTotal - depositRequired,
+      balanceDue,
       validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
       customerNotes: input.customerNotes,
       proposalData: input.proposalData ?? undefined,

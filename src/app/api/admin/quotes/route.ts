@@ -83,6 +83,7 @@ const adminQuoteSchema = z.object({
   subtotal: z.number().nonnegative(),
   discountTotal: z.number().nonnegative().optional(),
   depositRequired: z.number().nonnegative().optional(),
+  depositPercentage: z.number().min(0).max(100).optional(),
   validUntil: z.string().optional(),
   customerNotes: z.string().optional(),
   proposalData: quoteProposalSchema.optional(),
