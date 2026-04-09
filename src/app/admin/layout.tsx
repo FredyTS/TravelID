@@ -13,6 +13,8 @@ const adminNav = [
   { href: "/admin/orders", label: "Pedidos" },
   { href: "/admin/payments", label: "Pagos" },
   { href: "/admin/packages", label: "Paquetes" },
+  { href: "/admin/suppliers", label: "Proveedores" },
+  { href: "/admin/meal-plans", label: "Planes" },
   { href: "/admin/destinations", label: "Destinos" },
   { href: "/admin/hotels", label: "Hoteles" },
   { href: "/admin/promotions", label: "Promociones" },

@@ -386,6 +386,24 @@ export async function getMealPlanOptions() {
   });
 }
 
+export async function getAdminSupplierList() {
+  return prisma.supplier.findMany({
+    orderBy: [{ status: "asc" }, { name: "asc" }],
+  });
+}
+
+export async function getSupplierById(id: string) {
+  return prisma.supplier.findUnique({
+    where: { id },
+  });
+}
+
+export async function getMealPlanById(id: string) {
+  return prisma.mealPlan.findUnique({
+    where: { id },
+  });
+}
+
 export async function getHotelAmenityOptions() {
   return prisma.hotelAmenity.findMany({
     orderBy: [{ sortOrder: "asc" }, { name: "asc" }],

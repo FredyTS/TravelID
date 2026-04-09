@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { LoaderCircle } from "lucide-react";
+import { LoaderCircle, Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -39,50 +39,25 @@ type MealPlanOption = {
   name: string;
 };
 
-const defaultFlightsJson = JSON.stringify(
-  {
-    baggageLabel: "Tarifa con articulo personal y equipaje de mano",
-    personalItemLabel: "1 articulo personal",
-    carryOnLabel: "10 kg de mano",
-    segments: [
-      {
-        origin: "Ciudad de Mexico",
-        destination: "Cancun",
-        departureDate: "2026-08-12",
-        departureTime: "08:30",
-        arrivalTime: "10:45",
-        type: "Vuelo directo",
-      },
-      {
-        origin: "Cancun",
-        destination: "Ciudad de Mexico",
-        departureDate: "2026-08-16",
-        departureTime: "18:40",
-        arrivalTime: "21:05",
-        type: "Vuelo directo",
-      },
-    ],
-  },
-  null,
-  2,
-);
+type FlightSegmentState = {
+  id: string;
+  origin: string;
+  destination: string;
+  departureDate: string;
+  departureTime: string;
+  arrivalTime: string;
+  type: string;
+};
 
-const defaultTransferJson = JSON.stringify(
-  {
-    airport: "Aeropuerto Internacional de Cancun",
-    adults: 2,
-    minors: 0,
-    service: "Servicio privado redondo",
-    hotels: [
-      {
-        name: "Hotel Cancun Resort",
-        price: "$1,250 MXN",
-      },
-    ],
-  },
-  null,
-  2,
-);
+type TransferHotelState = {
+  id: string;
+  name: string;
+  price: string;
+};
+
+function makeId(prefix: string) {
+  return `${prefix}-${Math.random().toString(36).slice(2, 10)}`;
+}
 
 function findMealPlanName(mealPlanOptions: MealPlanOption[], mealPlanId: string) {
   return mealPlanOptions.find((mealPlan) => mealPlan.id === mealPlanId)?.name ?? "";
@@ -111,6 +86,40 @@ export function AdminQuoteForm({
   const [selectedRoomTypeId, setSelectedRoomTypeId] = useState("");
   const [selectedSupplierId, setSelectedSupplierId] = useState(supplierOptions[0]?.id ?? "");
   const [selectedPackageSlug, setSelectedPackageSlug] = useState("");
+  const [includeFlights, setIncludeFlights] = useState(true);
+  const [baggageLabel, setBaggageLabel] = useState("Tarifa con articulo personal y equipaje de mano");
+  const [personalItemLabel, setPersonalItemLabel] = useState("1 articulo personal");
+  const [carryOnLabel, setCarryOnLabel] = useState("10 kg de mano");
+  const [flightSegments, setFlightSegments] = useState<FlightSegmentState[]>([
+    {
+      id: makeId("flight"),
+      origin: "Ciudad de Mexico",
+      destination: "Cancun",
+      departureDate: "",
+      departureTime: "08:30",
+      arrivalTime: "10:45",
+      type: "Vuelo directo",
+    },
+    {
+      id: makeId("flight"),
+      origin: "Cancun",
+      destination: "Ciudad de Mexico",
+      departureDate: "",
+      departureTime: "18:40",
+      arrivalTime: "21:05",
+      type: "Vuelo directo",
+    },
+  ]);
+  const [includeTransfer, setIncludeTransfer] = useState(true);
+  const [transferAirport, setTransferAirport] = useState("Aeropuerto Internacional de Cancun");
+  const [transferService, setTransferService] = useState("Servicio privado redondo");
+  const [transferHotels, setTransferHotels] = useState<TransferHotelState[]>([
+    {
+      id: makeId("transfer"),
+      name: hotelOptions[0]?.name ?? "Hotel Cancun Resort",
+      price: "$1,250 MXN",
+    },
+  ]);
 
   const effectiveSelectedHotelId = selectedHotelId || hotelOptions[0]?.id || "";
   const selectedHotel = hotelOptions.find((hotel) => hotel.id === effectiveSelectedHotelId) ?? hotelOptions[0];
@@ -118,9 +127,58 @@ export function AdminQuoteForm({
   const currentRoomTypes = selectedHotel?.roomTypes ?? [];
   const effectiveSelectedMealPlanId =
     currentMealPlans.find((mealPlan) => mealPlan.id === selectedMealPlanId)?.id ?? currentMealPlans[0]?.id ?? "";
+  const visibleRoomTypes = currentRoomTypes.filter(
+    (roomType) => !roomType.mealPlanId || roomType.mealPlanId === effectiveSelectedMealPlanId,
+  );
   const effectiveSelectedRoomTypeId =
-    currentRoomTypes.find((roomType) => roomType.id === selectedRoomTypeId)?.id ?? currentRoomTypes[0]?.id ?? "";
+    visibleRoomTypes.find((roomType) => roomType.id === selectedRoomTypeId)?.id ?? visibleRoomTypes[0]?.id ?? "";
   const effectiveSelectedSupplierId = selectedSupplierId || supplierOptions[0]?.id || "";
+  const currentRoomType = visibleRoomTypes.find((roomType) => roomType.id === effectiveSelectedRoomTypeId);
+  const packageSummary = packageOptions.find((travelPackage) => travelPackage.slug === selectedPackageSlug);
+
+  function addFlightSegment() {
+    setFlightSegments((current) => [
+      ...current,
+      {
+        id: makeId("flight"),
+        origin: "",
+        destination: "",
+        departureDate: "",
+        departureTime: "",
+        arrivalTime: "",
+        type: "Vuelo directo",
+      },
+    ]);
+  }
+
+  function updateFlightSegment(segmentId: string, field: keyof Omit<FlightSegmentState, "id">, value: string) {
+    setFlightSegments((current) =>
+      current.map((segment) => (segment.id === segmentId ? { ...segment, [field]: value } : segment)),
+    );
+  }
+
+  function removeFlightSegment(segmentId: string) {
+    setFlightSegments((current) => current.filter((segment) => segment.id !== segmentId));
+  }
+
+  function addTransferHotel() {
+    setTransferHotels((current) => [
+      ...current,
+      {
+        id: makeId("transfer"),
+        name: "",
+        price: "",
+      },
+    ]);
+  }
+
+  function updateTransferHotel(rowId: string, field: keyof Omit<TransferHotelState, "id">, value: string) {
+    setTransferHotels((current) => current.map((row) => (row.id === rowId ? { ...row, [field]: value } : row)));
+  }
+
+  function removeTransferHotel(rowId: string) {
+    setTransferHotels((current) => current.filter((row) => row.id !== rowId));
+  }
 
   async function submit(formData: FormData) {
     setMessage(null);
@@ -132,8 +190,6 @@ export function AdminQuoteForm({
         const destination = String(formData.get("destination") ?? "");
         const checkIn = String(formData.get("checkIn") ?? "");
         const checkOut = String(formData.get("checkOut") ?? "");
-        const flightsRaw = String(formData.get("flightsJson") ?? "").trim();
-        const transferRaw = String(formData.get("transferJson") ?? "").trim();
         const supplierCode = String(formData.get("supplierCode") ?? "");
         const supplierName = String(formData.get("supplierName") ?? "");
         const hotelName = String(formData.get("hotelName") ?? "");
@@ -141,6 +197,33 @@ export function AdminQuoteForm({
         const hotelImage = String(formData.get("hotelImage") ?? "");
         const mealPlanName = String(formData.get("mealPlanName") ?? "");
         const roomTypeName = String(formData.get("roomTypeName") ?? "");
+
+        const normalizedFlightSegments = includeFlights
+          ? flightSegments
+              .map((segment) => {
+                const { id, ...segmentWithoutId } = segment;
+                void id;
+                return segmentWithoutId;
+              })
+              .filter(
+                (segment) =>
+                  segment.origin.trim() &&
+                  segment.destination.trim() &&
+                  segment.departureDate &&
+                  segment.departureTime &&
+                  segment.arrivalTime,
+              )
+          : [];
+
+        const normalizedTransferHotels = includeTransfer
+          ? transferHotels
+              .map((hotel) => {
+                const { id, ...hotelWithoutId } = hotel;
+                void id;
+                return hotelWithoutId;
+              })
+              .filter((hotel) => hotel.name.trim() && hotel.price.trim())
+          : [];
 
         const payload = {
           customerName: String(formData.get("customerName") ?? ""),
@@ -188,8 +271,25 @@ export function AdminQuoteForm({
                 note: String(formData.get("hotelNote") ?? ""),
               },
             ],
-            flights: flightsRaw ? JSON.parse(flightsRaw) : null,
-            transfer: transferRaw ? JSON.parse(transferRaw) : null,
+            flights:
+              includeFlights && normalizedFlightSegments.length > 0
+                ? {
+                    baggageLabel,
+                    personalItemLabel,
+                    carryOnLabel,
+                    segments: normalizedFlightSegments,
+                  }
+                : null,
+            transfer:
+              includeTransfer && normalizedTransferHotels.length > 0
+                ? {
+                    airport: transferAirport,
+                    adults,
+                    minors,
+                    service: transferService,
+                    hotels: normalizedTransferHotels,
+                  }
+                : null,
           },
           quoteItems: [
             {
@@ -211,6 +311,8 @@ export function AdminQuoteForm({
                 checkOut,
                 adults,
                 minors,
+                flights: includeFlights ? normalizedFlightSegments : [],
+                transferHotels: includeTransfer ? normalizedTransferHotels : [],
               },
             },
           ],
@@ -232,13 +334,10 @@ export function AdminQuoteForm({
         router.push(`/admin/quotes/${result.quote.id}`);
         router.refresh();
       } catch (error) {
-        setMessage(error instanceof Error ? error.message : "Revisa vuelos o traslados antes de guardar.");
+        setMessage(error instanceof Error ? error.message : "No fue posible crear la cotizacion.");
       }
     });
   }
-
-  const packageSummary = packageOptions.find((travelPackage) => travelPackage.slug === selectedPackageSlug);
-  const currentRoomType = currentRoomTypes.find((roomType) => roomType.id === effectiveSelectedRoomTypeId);
 
   return (
     <form action={submit} className="grid gap-4 md:grid-cols-2">
@@ -246,26 +345,26 @@ export function AdminQuoteForm({
         <label htmlFor="admin-quote-title" className="text-sm font-medium text-slate-700">
           Titulo interno de la cotizacion
         </label>
-        <Input id="admin-quote-title" name="title" placeholder="Ej. Verano en Cancun para familia Terry" required />
+        <Input id="admin-quote-title" name="title" placeholder="Ej. Escapada familiar en Cancun · Agosto 2026" required />
       </div>
 
       <div className="space-y-2">
         <label htmlFor="admin-quote-customer" className="text-sm font-medium text-slate-700">
           Nombre del cliente
         </label>
-        <Input id="admin-quote-customer" name="customerName" placeholder="Nombre del cliente" required />
+        <Input id="admin-quote-customer" name="customerName" placeholder="Nombre completo del cliente" required />
       </div>
       <div className="space-y-2">
         <label htmlFor="admin-quote-email" className="text-sm font-medium text-slate-700">
           Correo del cliente
         </label>
-        <Input id="admin-quote-email" name="email" placeholder="Correo del cliente" type="email" required />
+        <Input id="admin-quote-email" name="email" placeholder="correo@cliente.com" type="email" required />
       </div>
       <div className="space-y-2">
         <label htmlFor="admin-quote-phone" className="text-sm font-medium text-slate-700">
           Telefono o WhatsApp
         </label>
-        <Input id="admin-quote-phone" name="phone" placeholder="Telefono / WhatsApp" />
+        <Input id="admin-quote-phone" name="phone" placeholder="+52 614 000 0000" />
       </div>
       <div className="space-y-2">
         <label htmlFor="admin-quote-package" className="text-sm font-medium text-slate-700">
@@ -278,7 +377,7 @@ export function AdminQuoteForm({
           onChange={(event) => setSelectedPackageSlug(event.target.value)}
           className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
         >
-          <option value="">Cotizacion manual / sin paquete base</option>
+          <option value="">Cotizacion manual o viaje a medida</option>
           {packageOptions.map((pkg) => (
             <option key={pkg.slug} value={pkg.slug}>
               {pkg.name} · {pkg.destination}
@@ -288,8 +387,12 @@ export function AdminQuoteForm({
       </div>
 
       <div className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-        <p className="text-sm font-semibold text-slate-900">Datos del viaje</p>
-        <p className="mt-1 text-xs text-slate-500">Aterriza la propuesta comercial y la ocupacion exacta antes de guardar la cotizacion.</p>
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-slate-900">Datos generales del viaje</p>
+          <p className="text-xs text-slate-500">
+            Define destino, ocupacion, fechas y vigencia de la propuesta antes de cargar los bloques comerciales.
+          </p>
+        </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <label htmlFor="admin-quote-destination" className="text-sm font-medium text-slate-700">
@@ -298,16 +401,16 @@ export function AdminQuoteForm({
             <Input
               id="admin-quote-destination"
               name="destination"
-              placeholder="Destino cotizado"
+              placeholder="Destino principal"
               defaultValue={packageSummary?.destination ?? selectedHotel?.destination ?? ""}
               required
             />
           </div>
           <div className="space-y-2">
             <label htmlFor="admin-quote-origin" className="text-sm font-medium text-slate-700">
-              Ciudad de origen / salida
+              Ciudad de salida
             </label>
-            <Input id="admin-quote-origin" name="originCity" placeholder="Ciudad de origen" />
+            <Input id="admin-quote-origin" name="originCity" placeholder="Ej. Chihuahua" />
           </div>
           <div className="space-y-2">
             <label htmlFor="admin-quote-departure" className="text-sm font-medium text-slate-700">
@@ -341,13 +444,13 @@ export function AdminQuoteForm({
           </div>
           <div className="space-y-2">
             <label htmlFor="admin-quote-adults" className="text-sm font-medium text-slate-700">
-              Adultos
+              Numero de adultos
             </label>
             <Input id="admin-quote-adults" name="adults" type="number" defaultValue={2} min={1} />
           </div>
           <div className="space-y-2">
             <label htmlFor="admin-quote-minors" className="text-sm font-medium text-slate-700">
-              Menores
+              Numero de menores
             </label>
             <Input id="admin-quote-minors" name="minors" type="number" defaultValue={0} min={0} />
           </div>
@@ -355,13 +458,19 @@ export function AdminQuoteForm({
             <label htmlFor="admin-quote-minor-ages" className="text-sm font-medium text-slate-700">
               Edades de menores
             </label>
-            <Input id="admin-quote-minor-ages" name="minorAges" placeholder="Ej. 5, 8" />
+            <Input id="admin-quote-minor-ages" name="minorAges" placeholder="Ej. 4, 8" />
           </div>
         </div>
       </div>
 
       <div className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-        <p className="text-sm font-semibold text-slate-900">Hotel, proveedor y configuracion base</p>
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-slate-900">Hotel, proveedor y configuracion comercial</p>
+          <p className="text-xs text-slate-500">
+            Selecciona la base operativa de la propuesta para que la clave proveedor, plan y habitacion queden congelados.
+          </p>
+        </div>
+
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Hotel</label>
@@ -370,9 +479,17 @@ export function AdminQuoteForm({
               value={effectiveSelectedHotelId}
               onChange={(event) => {
                 const nextHotel = hotelOptions.find((hotel) => hotel.id === event.target.value);
+                const nextMealPlanId = nextHotel?.mealPlans[0]?.id ?? "";
+                const nextRoomTypeId =
+                  nextHotel?.roomTypes.find((roomType) => !roomType.mealPlanId || roomType.mealPlanId === nextMealPlanId)?.id ??
+                  nextHotel?.roomTypes[0]?.id ??
+                  "";
                 setSelectedHotelId(event.target.value);
-                setSelectedMealPlanId(nextHotel?.mealPlans[0]?.id ?? "");
-                setSelectedRoomTypeId(nextHotel?.roomTypes[0]?.id ?? "");
+                setSelectedMealPlanId(nextMealPlanId);
+                setSelectedRoomTypeId(nextRoomTypeId);
+                setTransferHotels((current) =>
+                  current.map((row, index) => (index === 0 ? { ...row, name: nextHotel?.name ?? row.name } : row)),
+                );
               }}
               className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
             >
@@ -404,20 +521,20 @@ export function AdminQuoteForm({
             <select
               name="mealPlanId"
               value={effectiveSelectedMealPlanId}
-              onChange={(event) => setSelectedMealPlanId(event.target.value)}
+              onChange={(event) => {
+                const nextMealPlanId = event.target.value;
+                const nextRoomTypeId =
+                  currentRoomTypes.find((roomType) => !roomType.mealPlanId || roomType.mealPlanId === nextMealPlanId)?.id ?? "";
+                setSelectedMealPlanId(nextMealPlanId);
+                setSelectedRoomTypeId(nextRoomTypeId);
+              }}
               className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
             >
-              {currentMealPlans.map((mealPlan) => (
+              {(currentMealPlans.length > 0 ? currentMealPlans : mealPlanOptions).map((mealPlan) => (
                 <option key={mealPlan.id} value={mealPlan.id}>
                   {mealPlan.name}
                 </option>
               ))}
-              {currentMealPlans.length === 0 &&
-                mealPlanOptions.map((mealPlan) => (
-                  <option key={mealPlan.id} value={mealPlan.id}>
-                    {mealPlan.name}
-                  </option>
-                ))}
             </select>
           </div>
           <div className="space-y-2">
@@ -428,7 +545,7 @@ export function AdminQuoteForm({
               onChange={(event) => setSelectedRoomTypeId(event.target.value)}
               className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
             >
-              {currentRoomTypes.map((roomType) => (
+              {visibleRoomTypes.map((roomType) => (
                 <option key={roomType.id} value={roomType.id}>
                   {roomType.name}
                 </option>
@@ -436,16 +553,20 @@ export function AdminQuoteForm({
             </select>
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Codigo hotel</label>
+            <label className="text-sm font-medium text-slate-700">Clave o codigo del hotel</label>
             <Input name="hotelCode" defaultValue={selectedHotel?.legacyHotelCode ?? ""} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Imagen para propuesta</label>
+            <label className="text-sm font-medium text-slate-700">URL de imagen principal para la propuesta</label>
             <Input name="hotelImage" defaultValue={selectedHotel?.heroImageUrl ?? ""} />
           </div>
         </div>
 
-        <input type="hidden" name="supplierCode" value={supplierOptions.find((supplier) => supplier.id === effectiveSelectedSupplierId)?.code ?? ""} />
+        <input
+          type="hidden"
+          name="supplierCode"
+          value={supplierOptions.find((supplier) => supplier.id === effectiveSelectedSupplierId)?.code ?? ""}
+        />
         <input type="hidden" name="supplierName" value={findSupplierName(supplierOptions, effectiveSelectedSupplierId)} />
         <input type="hidden" name="hotelName" value={selectedHotel?.name ?? ""} />
         <input type="hidden" name="mealPlanName" value={findMealPlanName(mealPlanOptions, effectiveSelectedMealPlanId)} />
@@ -453,7 +574,12 @@ export function AdminQuoteForm({
       </div>
 
       <div className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
-        <p className="text-sm font-semibold text-slate-900">Condiciones hoteleras y pagos</p>
+        <div className="space-y-1">
+          <p className="text-sm font-semibold text-slate-900">Condiciones hoteleras y pagos</p>
+          <p className="text-xs text-slate-500">
+            Estos importes y fechas se mostrarán en la propuesta comercial y se conservarán como snapshot.
+          </p>
+        </div>
         <div className="mt-4 grid gap-4 md:grid-cols-3">
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Subtotal cotizado</label>
@@ -468,11 +594,11 @@ export function AdminQuoteForm({
             <Input name="depositRequired" type="number" defaultValue={3500} />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Fecha limite anticipo</label>
+            <label className="text-sm font-medium text-slate-700">Fecha limite de anticipo</label>
             <Input name="hotelDepositDueDate" type="date" />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Monto anticipo</label>
+            <label className="text-sm font-medium text-slate-700">Monto del anticipo</label>
             <Input name="hotelDepositAmount" placeholder="$3,500 MXN" />
           </div>
           <div className="space-y-2">
@@ -480,35 +606,233 @@ export function AdminQuoteForm({
             <Input name="hotelPricePerNight" placeholder="$3,247 MXN" />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Fecha liquidacion</label>
+            <label className="text-sm font-medium text-slate-700">Fecha limite de liquidacion</label>
             <Input name="hotelBalanceDueDate" type="date" />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Monto saldo</label>
+            <label className="text-sm font-medium text-slate-700">Monto del saldo</label>
             <Input name="hotelBalanceAmount" placeholder="$9,490 MXN" />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Total hotel</label>
+            <label className="text-sm font-medium text-slate-700">Total del hotel</label>
             <Input name="hotelTotal" placeholder="$12,990 MXN" required />
           </div>
         </div>
         <div className="mt-4 grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <label className="text-sm font-medium text-slate-700">Leyenda comercial</label>
-            <Textarea name="hotelLegend" rows={3} placeholder="Pago inmediato, no acepta cambios ni cancelaciones." />
+            <Textarea
+              name="hotelLegend"
+              rows={3}
+              placeholder="Ej. Pago inmediato, no reembolsable y sujeto a disponibilidad."
+            />
           </div>
           <div className="space-y-2">
-            <label className="text-sm font-medium text-slate-700">Nota visible</label>
-            <Textarea name="hotelNote" rows={3} placeholder="Incluye hospedaje, alimentos, amenidades y asistencia previa al viaje." />
+            <label className="text-sm font-medium text-slate-700">Nota visible para el cliente</label>
+            <Textarea
+              name="hotelNote"
+              rows={3}
+              placeholder="Ej. Incluye hospedaje, plan seleccionado y asistencia antes del viaje."
+            />
           </div>
         </div>
+      </div>
+
+      <div className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-slate-900">Vuelos incluidos en la propuesta</p>
+            <p className="text-xs text-slate-500">
+              Captura cada tramo del itinerario sin editar JSON. Estos datos se insertan directo en la plantilla final.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={includeFlights}
+              onChange={(event) => setIncludeFlights(event.target.checked)}
+              className="size-4 rounded border-slate-300"
+            />
+            Incluir vuelos
+          </label>
+        </div>
+
+        {includeFlights ? (
+          <div className="mt-4 space-y-4">
+            <div className="grid gap-4 md:grid-cols-3">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Etiqueta de tarifa</label>
+                <Input value={baggageLabel} onChange={(event) => setBaggageLabel(event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Articulo personal</label>
+                <Input value={personalItemLabel} onChange={(event) => setPersonalItemLabel(event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Equipaje de mano</label>
+                <Input value={carryOnLabel} onChange={(event) => setCarryOnLabel(event.target.value)} />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {flightSegments.map((segment, index) => (
+                <div key={segment.id} className="rounded-2xl border border-slate-200 bg-white p-4">
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-sm font-semibold text-slate-900">Tramo {index + 1}</p>
+                    {flightSegments.length > 1 ? (
+                      <Button type="button" variant="outline" size="sm" onClick={() => removeFlightSegment(segment.id)}>
+                        <Trash2 className="size-4" />
+                        Eliminar tramo
+                      </Button>
+                    ) : null}
+                  </div>
+                  <div className="mt-3 grid gap-4 md:grid-cols-3">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Origen</label>
+                      <Input
+                        value={segment.origin}
+                        onChange={(event) => updateFlightSegment(segment.id, "origin", event.target.value)}
+                        placeholder="Ciudad o aeropuerto de salida"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Destino</label>
+                      <Input
+                        value={segment.destination}
+                        onChange={(event) => updateFlightSegment(segment.id, "destination", event.target.value)}
+                        placeholder="Ciudad o aeropuerto de llegada"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Tipo de vuelo</label>
+                      <Input
+                        value={segment.type}
+                        onChange={(event) => updateFlightSegment(segment.id, "type", event.target.value)}
+                        placeholder="Ej. Vuelo directo"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Fecha</label>
+                      <Input
+                        type="date"
+                        value={segment.departureDate}
+                        onChange={(event) => updateFlightSegment(segment.id, "departureDate", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Hora de salida</label>
+                      <Input
+                        type="time"
+                        value={segment.departureTime}
+                        onChange={(event) => updateFlightSegment(segment.id, "departureTime", event.target.value)}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium text-slate-700">Hora de llegada</label>
+                      <Input
+                        type="time"
+                        value={segment.arrivalTime}
+                        onChange={(event) => updateFlightSegment(segment.id, "arrivalTime", event.target.value)}
+                      />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Button type="button" variant="outline" onClick={addFlightSegment}>
+              <Plus className="size-4" />
+              Agregar tramo de vuelo
+            </Button>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-slate-500">La propuesta se guardará sin bloque de vuelos.</p>
+        )}
+      </div>
+
+      <div className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-slate-900">Traslado aeropuerto - hotel - aeropuerto</p>
+            <p className="text-xs text-slate-500">
+              Captura aeropuerto, tipo de servicio y hoteles con precio para que salgan ordenados en la cotizacion final.
+            </p>
+          </div>
+          <label className="flex items-center gap-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={includeTransfer}
+              onChange={(event) => setIncludeTransfer(event.target.checked)}
+              className="size-4 rounded border-slate-300"
+            />
+            Incluir traslados
+          </label>
+        </div>
+
+        {includeTransfer ? (
+          <div className="mt-4 space-y-4">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Aeropuerto</label>
+                <Input value={transferAirport} onChange={(event) => setTransferAirport(event.target.value)} />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium text-slate-700">Tipo de servicio</label>
+                <Input value={transferService} onChange={(event) => setTransferService(event.target.value)} />
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {transferHotels.map((hotel, index) => (
+                <div key={hotel.id} className="grid gap-3 rounded-2xl border border-slate-200 bg-white p-4 md:grid-cols-[1fr_220px_auto]">
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Hotel {index + 1}</label>
+                    <Input
+                      value={hotel.name}
+                      onChange={(event) => updateTransferHotel(hotel.id, "name", event.target.value)}
+                      placeholder="Nombre del hotel"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-slate-700">Precio del traslado</label>
+                    <Input
+                      value={hotel.price}
+                      onChange={(event) => updateTransferHotel(hotel.id, "price", event.target.value)}
+                      placeholder="$1,250 MXN"
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    {transferHotels.length > 1 ? (
+                      <Button type="button" variant="outline" size="sm" onClick={() => removeTransferHotel(hotel.id)}>
+                        <Trash2 className="size-4" />
+                        Eliminar
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <Button type="button" variant="outline" onClick={addTransferHotel}>
+              <Plus className="size-4" />
+              Agregar hotel al traslado
+            </Button>
+          </div>
+        ) : (
+          <p className="mt-4 text-sm text-slate-500">La propuesta se guardará sin bloque de traslados.</p>
+        )}
       </div>
 
       <div className="space-y-2 md:col-span-2">
         <label htmlFor="admin-quote-notes" className="text-sm font-medium text-slate-700">
           Notas visibles al cliente
         </label>
-        <Textarea id="admin-quote-notes" name="customerNotes" rows={4} placeholder="Notas visibles al cliente" />
+        <Textarea
+          id="admin-quote-notes"
+          name="customerNotes"
+          rows={4}
+          placeholder="Indicaciones, inclusiones o aclaraciones que verá el cliente."
+        />
       </div>
       <div className="space-y-2 md:col-span-2">
         <label htmlFor="admin-quote-footer" className="text-sm font-medium text-slate-700">
@@ -521,28 +845,7 @@ export function AdminQuoteForm({
           defaultValue="*Precio cotizado por el total en moneda mexicana, sujeto a disponibilidad y cambios sin previo aviso."
         />
       </div>
-      <div className="space-y-2 md:col-span-2">
-        <label htmlFor="admin-quote-flights-json" className="text-sm font-medium text-slate-700">
-          Bloque JSON de vuelos
-        </label>
-        <Textarea
-          id="admin-quote-flights-json"
-          name="flightsJson"
-          className="min-h-60 font-mono text-xs"
-          defaultValue={defaultFlightsJson}
-        />
-      </div>
-      <div className="space-y-2 md:col-span-2">
-        <label htmlFor="admin-quote-transfer-json" className="text-sm font-medium text-slate-700">
-          Bloque JSON de traslados
-        </label>
-        <Textarea
-          id="admin-quote-transfer-json"
-          name="transferJson"
-          className="min-h-48 font-mono text-xs"
-          defaultValue={defaultTransferJson}
-        />
-      </div>
+
       <Button className="md:col-span-2" disabled={isPending}>
         {isPending ? (
           <>

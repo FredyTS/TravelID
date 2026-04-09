@@ -147,7 +147,7 @@ export default async function NewQuotePage() {
                 </div>
               ))}
               <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
-                Usa los bloques JSON para capturar la informacion que debe salir en la plantilla final del cliente. Esta propuesta queda guardada en la cotizacion.
+                Captura vuelos, traslados, hotel, pagos y leyendas desde el formulario. Toda esa informacion queda guardada en la cotizacion y alimenta la plantilla final del cliente.
               </div>
             </CardContent>
           </Card>
