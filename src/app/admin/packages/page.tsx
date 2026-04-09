@@ -6,6 +6,9 @@ import {
   getAdminPackageById,
   getDestinationOptions,
   getHotelOptions,
+  getMealPlanOptions,
+  getSupplierOptions,
+  getHotelRoomTypeOptions,
 } from "@/features/catalog/server/catalog-service";
 import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -34,10 +37,13 @@ export default async function AdminPackagesPage({
 }) {
   const params = (await searchParams) ?? {};
   const editId = typeof params.edit === "string" ? params.edit : undefined;
-  const [{ packages }, destinations, hotels, currentPackage] = await Promise.all([
+  const [{ packages }, destinations, hotels, suppliers, mealPlans, roomTypes, currentPackage] = await Promise.all([
     getAdminCatalogOverview(),
     getDestinationOptions(),
     getHotelOptions(),
+    getSupplierOptions(),
+    getMealPlanOptions(),
+    getHotelRoomTypeOptions(),
     editId ? getAdminPackageById(editId) : Promise.resolve(null),
   ]);
 
@@ -125,12 +131,57 @@ export default async function AdminPackagesPage({
                   </select>
                 </div>
                 <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Proveedor base</label>
+                  <select
+                    name="supplierId"
+                    defaultValue={currentPackage?.supplierId ?? ""}
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  >
+                    <option value="">Sin proveedor principal</option>
+                    {suppliers.map((supplier) => (
+                      <option key={supplier.id} value={supplier.id}>
+                        {(supplier.displayName ?? supplier.name) + (supplier.code ? ` · ${supplier.code}` : "")}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Ubicacion visible</label>
                   <Input name="locationLabel" defaultValue={currentPackage?.locationLabel ?? ""} placeholder="Caribe Mexicano" />
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-slate-700">Ciudad de salida incluida</label>
                   <Input name="departureCity" defaultValue={currentPackage?.departureCity ?? ""} placeholder="Ciudad de Mexico" />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Plan base</label>
+                  <select
+                    name="mealPlanId"
+                    defaultValue={currentPackage?.mealPlanId ?? ""}
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  >
+                    <option value="">Plan por definir</option>
+                    {mealPlans.map((mealPlan) => (
+                      <option key={mealPlan.id} value={mealPlan.id}>
+                        {mealPlan.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Habitacion base</label>
+                  <select
+                    name="defaultRoomTypeId"
+                    defaultValue={currentPackage?.defaultRoomTypeId ?? ""}
+                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+                  >
+                    <option value="">Habitacion por definir</option>
+                    {roomTypes.map((roomType) => (
+                      <option key={roomType.id} value={roomType.id}>
+                        {roomType.name} · {roomType.hotel.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
@@ -142,6 +193,25 @@ export default async function AdminPackagesPage({
               <div className="space-y-2">
                 <label className="text-sm font-medium text-slate-700">Descripcion</label>
                 <Textarea name="description" rows={5} defaultValue={currentPackage?.description ?? ""} required />
+              </div>
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Base de precio publicada</label>
+                  <Input
+                    name="priceBasis"
+                    defaultValue={currentPackage?.priceBasis ?? ""}
+                    placeholder="Tarifa publicada desde Chihuahua para 2 adultos"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700">Condiciones de reserva inmediata</label>
+                  <Input
+                    name="bookingConditionsSummary"
+                    defaultValue={currentPackage?.bookingConditionsSummary ?? ""}
+                    placeholder="Salida desde CDMX, Junior Suite, plan all inclusive"
+                  />
+                </div>
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
@@ -283,6 +353,11 @@ export default async function AdminPackagesPage({
                           ) : null}
                           {travelPackage.directBookable ? (
                             <Badge className="bg-sky-100 text-sky-800 hover:bg-sky-100">Reserva inmediata</Badge>
+                          ) : null}
+                          {travelPackage.supplier ? (
+                            <Badge className="bg-violet-100 text-violet-800 hover:bg-violet-100">
+                              {travelPackage.supplier.displayName ?? travelPackage.supplier.name}
+                            </Badge>
                           ) : null}
                         </div>
                       </TableCell>

@@ -1,6 +1,8 @@
 import { siteConfig } from "@/config/site";
 
 export type QuoteHotelProposal = {
+  supplierCode?: string;
+  supplierName?: string;
   name: string;
   code?: string;
   image?: string;
@@ -86,6 +88,7 @@ function renderHotels(hotels: QuoteHotelProposal[]) {
               : ""
           }
           <table class="table">
+            <tr><th>Proveedor</th><td>${escapeHtml(hotel.supplierName ?? "Por confirmar")}</td><th>Clave proveedor</th><td>${escapeHtml(hotel.supplierCode ?? "N/A")}</td></tr>
             <tr><th>Plan</th><td>${escapeHtml(hotel.mealPlan)}</td><th>Habitacion</th><td>${escapeHtml(hotel.roomType)}</td></tr>
             <tr><th>Fecha anticipo</th><td>${escapeHtml(hotel.depositDueDate ?? "Por definir")}</td><th>Anticipo</th><td>${escapeHtml(hotel.depositAmount ?? "Por definir")}</td></tr>
             <tr><th>Fecha liquidacion</th><td>${escapeHtml(hotel.balanceDueDate ?? "Por definir")}</td><th>Saldo</th><td>${escapeHtml(hotel.balanceAmount ?? "Por definir")}</td></tr>
