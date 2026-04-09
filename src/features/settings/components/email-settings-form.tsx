@@ -173,7 +173,6 @@ export function EmailSettingsForm({ initialValues }: { initialValues: EmailSetti
             ].map((template) => {
               const value = values.templates[template.key as keyof typeof values.templates] as {
                 subject: string;
-                text: string;
                 html: string;
               };
 
@@ -195,22 +194,12 @@ export function EmailSettingsForm({ initialValues }: { initialValues: EmailSetti
                       />
                     </div>
                     <div>
-                      <label className="block text-sm font-medium text-slate-700">Texto plano</label>
-                      <Textarea
-                        className="mt-2 min-h-32 font-mono text-xs"
-                        value={value.text}
-                        onChange={(event) =>
-                          updateTemplate(template.key as keyof typeof values.templates, {
-                            ...value,
-                            text: event.target.value,
-                          })
-                        }
-                      />
-                    </div>
-                    <div>
                       <label className="block text-sm font-medium text-slate-700">HTML</label>
+                      <p className="mt-2 text-sm text-slate-500">
+                        El texto plano se genera automaticamente desde este HTML cuando se envia el correo.
+                      </p>
                       <Textarea
-                        className="mt-2 min-h-64 font-mono text-xs"
+                        className="mt-3 min-h-64 font-mono text-xs"
                         value={value.html}
                         onChange={(event) =>
                           updateTemplate(template.key as keyof typeof values.templates, {

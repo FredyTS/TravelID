@@ -26,7 +26,6 @@ export type EmailSettings = {
 export type EmailTemplateConfig = {
   subject: string;
   html: string;
-  text: string;
 };
 
 export type QuotePdfTemplateConfig = {
@@ -138,17 +137,14 @@ export async function getEmailSettings(): Promise<CommunicationSettings> {
       magicLinkEmail: {
         subject: storedTemplates.magicLinkEmail?.subject ?? defaultMagicLink.subject,
         html: storedTemplates.magicLinkEmail?.html ?? defaultMagicLink.html,
-        text: storedTemplates.magicLinkEmail?.text ?? defaultMagicLink.text,
       },
       conversationNotificationEmail: {
         subject: storedTemplates.conversationNotificationEmail?.subject ?? defaultConversation.subject,
         html: storedTemplates.conversationNotificationEmail?.html ?? defaultConversation.html,
-        text: storedTemplates.conversationNotificationEmail?.text ?? defaultConversation.text,
       },
       portalTrackingEmail: {
         subject: storedTemplates.portalTrackingEmail?.subject ?? defaultPortalTracking.subject,
         html: storedTemplates.portalTrackingEmail?.html ?? defaultPortalTracking.html,
-        text: storedTemplates.portalTrackingEmail?.text ?? defaultPortalTracking.text,
       },
       quoteProposalHtmlTemplate:
         storedTemplates.quoteProposalHtmlTemplate ?? getDefaultQuoteProposalHtmlTemplate(),

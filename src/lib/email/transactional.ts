@@ -1,8 +1,9 @@
 import { EmailDeliveryStatus, EmailProvider } from "@prisma/client";
 import { Resend } from "resend";
 import { prisma } from "@/lib/db/prisma";
+import type { EmailTemplateConfig } from "@/features/settings/server/settings-service";
 import { getEmailSettings } from "@/features/settings/server/settings-service";
-import { escapeHtml, renderTemplate } from "@/features/settings/server/template-engine";
+import { escapeHtml, htmlToPlainText, renderTemplate } from "@/features/settings/server/template-engine";
 import { getDefaultSiteTemplateVariables } from "@/features/settings/server/template-settings";
 
 type EmailTrackingInput = {
@@ -100,6 +101,18 @@ function buildEmailTemplateVariables(input: {
       secondary_cta_url: secondaryCtaUrl,
       secondary_cta_link: secondaryCtaUrl,
     },
+  };
+}
+
+function renderConfiguredEmailTemplate(template: EmailTemplateConfig, variables: ReturnType<typeof buildEmailTemplateVariables>) {
+  const subject = renderTemplate(template.subject, variables.text).trim();
+  const html = renderTemplate(template.html, variables.html).trim();
+  const text = htmlToPlainText(html);
+
+  return {
+    subject,
+    html,
+    text,
   };
 }
 
@@ -270,12 +283,13 @@ export async function sendMagicLinkEmail(input: {
     ctaUrl: input.url,
     primaryButtonColor: "#0f766e",
   });
+  const email = renderConfiguredEmailTemplate(settings.templates.magicLinkEmail, variables);
 
   return sendTransactionalEmail({
     to: input.email,
-    subject: renderTemplate(settings.templates.magicLinkEmail.subject, variables.text),
-    text: renderTemplate(settings.templates.magicLinkEmail.text, variables.text),
-    html: renderTemplate(settings.templates.magicLinkEmail.html, variables.html),
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
     tracking: {
       category: "MAGIC_LINK",
       metadata: {
@@ -304,12 +318,13 @@ export async function sendConversationNotificationEmail(input: {
     ctaUrl: input.ctaUrl,
     primaryButtonColor: "#1d4ed8",
   });
+  const email = renderConfiguredEmailTemplate(settings.templates.conversationNotificationEmail, variables);
 
   return sendTransactionalEmail({
     to: input.email,
-    subject: renderTemplate(settings.templates.conversationNotificationEmail.subject, variables.text),
-    text: renderTemplate(settings.templates.conversationNotificationEmail.text, variables.text),
-    html: renderTemplate(settings.templates.conversationNotificationEmail.html, variables.html),
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
     tracking: {
       category: "CONVERSATION_NOTIFICATION",
       ...input.tracking,
@@ -341,12 +356,13 @@ export async function sendPortalTrackingEmail(input: {
     primaryButtonColor: "#0284c7",
     secondaryLinkColor: "#0f766e",
   });
+  const email = renderConfiguredEmailTemplate(settings.templates.portalTrackingEmail, variables);
 
   return sendTransactionalEmail({
     to: input.email,
-    subject: renderTemplate(settings.templates.portalTrackingEmail.subject, variables.text),
-    text: renderTemplate(settings.templates.portalTrackingEmail.text, variables.text),
-    html: renderTemplate(settings.templates.portalTrackingEmail.html, variables.html),
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
     tracking: {
       category: "PORTAL_TRACKING",
       ...input.tracking,

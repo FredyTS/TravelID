@@ -76,7 +76,6 @@ export const quoteTemplateTagGroups = [
 export function getDefaultMagicLinkEmailTemplate() {
   return {
     subject: "Tu acceso a {{site_name}}",
-    text: "{{greeting}}\n\nTu cuenta ya esta lista. Abre este enlace para entrar a tu portal:\n{{cta_url}}\n\nSi necesitas ayuda, escribe a {{support_email}}.",
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;max-width:640px;margin:0 auto">
         <p style="margin:0 0 16px">{{greeting}}</p>
@@ -94,7 +93,6 @@ export function getDefaultMagicLinkEmailTemplate() {
 export function getDefaultConversationEmailTemplate() {
   return {
     subject: "{{site_name}} · {{preview}}",
-    text: "{{greeting}}\n\n{{preview}}\n\nRevisa el mensaje aqui:\n{{cta_url}}",
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;max-width:640px;margin:0 auto">
         <p style="margin:0 0 16px">{{greeting}}</p>
@@ -110,7 +108,6 @@ export function getDefaultConversationEmailTemplate() {
 export function getDefaultPortalTrackingEmailTemplate() {
   return {
     subject: "{{site_name}} · Seguimiento de tu viaje",
-    text: "{{greeting}}\n\n{{intro}}\n\nAbre aqui:\n{{cta_url}}\n\n{{secondary_cta_url}}",
     html: `
       <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;max-width:640px;margin:0 auto">
         <div style="padding:24px 0 12px">

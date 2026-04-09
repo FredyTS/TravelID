@@ -17,17 +17,14 @@ const emailSettingsSchema = z.object({
     magicLinkEmail: z.object({
       subject: z.string().min(1),
       html: z.string().min(1),
-      text: z.string().min(1),
     }),
     conversationNotificationEmail: z.object({
       subject: z.string().min(1),
       html: z.string().min(1),
-      text: z.string().min(1),
     }),
     portalTrackingEmail: z.object({
       subject: z.string().min(1),
       html: z.string().min(1),
-      text: z.string().min(1),
     }),
     quoteProposalHtmlTemplate: z.string().min(1),
     quoteProposalPdf: z.object({
