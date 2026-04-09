@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ConvertQuoteButton } from "@/features/quotes/components/convert-quote-button";
+import { RegisterQuoteProposalButton } from "@/features/documents/components/register-quote-proposal-button";
 
 export const dynamic = "force-dynamic";
 
@@ -21,6 +22,7 @@ export default async function AdminQuoteDetailPage({
       customer: true,
       items: true,
       convertedOrder: true,
+      documents: true,
     },
   });
 
@@ -41,13 +43,22 @@ export default async function AdminQuoteDetailPage({
         </div>
         <div className="flex items-center gap-3">
           {quote.proposalHtml ? (
-            <Link
-              href={`/api/quotes/${quote.id}/proposal`}
-              target="_blank"
-              className="text-sm font-medium text-primary hover:underline"
-            >
-              Abrir propuesta HTML
-            </Link>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href={`/api/quotes/${quote.id}/proposal`}
+                target="_blank"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Abrir propuesta HTML
+              </Link>
+              <Link
+                href={`/api/quotes/${quote.id}/proposal-pdf`}
+                target="_blank"
+                className="text-sm font-medium text-primary hover:underline"
+              >
+                Abrir propuesta PDF
+              </Link>
+            </div>
           ) : null}
           <Badge className="bg-amber-300 text-slate-950 hover:bg-amber-300">{quote.status}</Badge>
         </div>
@@ -127,10 +138,39 @@ export default async function AdminQuoteDetailPage({
                 <ConvertQuoteButton quoteId={quote.id} />
               )}
               {quote.proposalHtml ? (
-                <Link href={`/api/quotes/${quote.id}/proposal`} target="_blank" className="font-medium text-primary">
-                  Vista imprimible de la cotizacion
-                </Link>
+                <div className="space-y-3">
+                  <Link href={`/api/quotes/${quote.id}/proposal`} target="_blank" className="block font-medium text-primary">
+                    Vista imprimible de la cotizacion
+                  </Link>
+                  <Link href={`/api/quotes/${quote.id}/proposal-pdf`} target="_blank" className="block font-medium text-primary">
+                    Descargar o abrir PDF
+                  </Link>
+                  <RegisterQuoteProposalButton quoteId={quote.id} />
+                </div>
               ) : null}
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
+            <CardHeader>
+              <CardTitle>Documentos publicados</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-600">
+              {quote.documents.length > 0 ? (
+                quote.documents.map((document) => (
+                  <div key={document.id} className="rounded-[1.5rem] border border-slate-200 p-4">
+                    <p className="font-medium text-slate-950">{document.name}</p>
+                    <p className="mt-1 text-xs text-slate-500">
+                      {document.type} · {document.visibility}
+                    </p>
+                    <Link href={`/api/documents/${document.id}/download`} className="mt-3 inline-block font-medium text-primary">
+                      Descargar documento
+                    </Link>
+                  </div>
+                ))
+              ) : (
+                <p>Aun no hay documentos publicados para esta cotizacion.</p>
+              )}
             </CardContent>
           </Card>
         </div>

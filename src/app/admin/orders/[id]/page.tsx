@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/db/prisma";
 import { formatCurrency } from "@/lib/utils";
@@ -71,7 +72,9 @@ export default async function AdminOrderDetailPage({
       <div className="grid gap-6 xl:grid-cols-[1.05fr_0.95fr]">
         <div className="space-y-6">
           <Card className="rounded-[2rem] border-slate-200 bg-white">
-            <CardHeader><CardTitle>Resumen comercial</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Resumen comercial</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="rounded-[1.5rem] bg-slate-50 p-4">
@@ -102,7 +105,9 @@ export default async function AdminOrderDetailPage({
           </Card>
 
           <Card className="rounded-[2rem] border-slate-200 bg-white">
-            <CardHeader><CardTitle>Conversacion con cliente</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Conversacion con cliente</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-3">
                 {thread?.messages.length ? (
@@ -135,7 +140,9 @@ export default async function AdminOrderDetailPage({
           </Card>
 
           <Card className="rounded-[2rem] border-slate-200 bg-white">
-            <CardHeader><CardTitle>Timeline y notas visibles</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Timeline y notas visibles</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               {order.travelUpdates.length > 0 ? (
                 order.travelUpdates.map((entry) => (
@@ -154,16 +161,16 @@ export default async function AdminOrderDetailPage({
 
         <div className="space-y-6">
           <Card className="rounded-[2rem] border-slate-200 bg-white">
-            <CardHeader><CardTitle>Calendario de cobro</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Calendario de cobro</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               {order.paymentSchedules.map((schedule) => (
                 <div key={schedule.id} className="rounded-[1.5rem] border border-slate-200 p-4">
                   <div className="flex items-center justify-between gap-3">
                     <div>
                       <p className="font-medium text-slate-950">{schedule.dueType}</p>
-                      <p className="mt-1 text-sm text-slate-500">
-                        Vence {schedule.dueDate.toLocaleDateString("es-MX")}
-                      </p>
+                      <p className="mt-1 text-sm text-slate-500">Vence {schedule.dueDate.toLocaleDateString("es-MX")}</p>
                     </div>
                     <div className="text-right">
                       <p className="font-medium text-slate-950">{formatCurrency(Number(schedule.amount))}</p>
@@ -186,7 +193,9 @@ export default async function AdminOrderDetailPage({
           </Card>
 
           <Card className="rounded-[2rem] border-slate-200 bg-white">
-            <CardHeader><CardTitle>Historial de pagos</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Historial de pagos</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               {order.payments.length > 0 ? (
                 order.payments.map((payment) => (
@@ -207,7 +216,9 @@ export default async function AdminOrderDetailPage({
           </Card>
 
           <Card className="rounded-[2rem] border-slate-200 bg-white">
-            <CardHeader><CardTitle>Documentos y entrega</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>Documentos y entrega</CardTitle>
+            </CardHeader>
             <CardContent className="space-y-3">
               {order.documents.length > 0 ? (
                 order.documents.map((document) => (
@@ -216,6 +227,9 @@ export default async function AdminOrderDetailPage({
                     <p className="mt-1 text-sm text-slate-500">
                       {document.type} · {document.visibility}
                     </p>
+                    <Link href={`/api/documents/${document.id}/download`} className="mt-3 inline-block text-sm font-medium text-primary">
+                      Descargar
+                    </Link>
                   </div>
                 ))
               ) : (
