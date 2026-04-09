@@ -20,11 +20,18 @@ export default async function AdminSettingsPage() {
 
       <Card className="rounded-[2rem] border-slate-200 bg-white">
         <CardHeader>
-          <CardTitle>Correo transaccional</CardTitle>
+          <CardTitle>Correo, propuestas y plantillas</CardTitle>
         </CardHeader>
         <CardContent>
           <EmailSettingsForm initialValues={emailSettings} />
           <div className="mt-6 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
+            <p className="font-medium text-slate-950">Plantillas listas para editar</p>
+            <p className="mt-2">
+              Desde aqui puedes ajustar asuntos, texto plano, HTML de correos, HTML base de la cotizacion y los textos
+              del PDF usando tags dinamicos sin redeploy.
+            </p>
+          </div>
+          <div className="mt-4 rounded-[1.5rem] border border-slate-200 bg-slate-50 p-5 text-sm text-slate-600">
             <p className="font-medium text-slate-950">Webhook de Mailchimp Transactional</p>
             <p className="mt-2">
               Si activas Mailchimp Transactional, configura este endpoint en su panel:
