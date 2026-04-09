@@ -45,13 +45,47 @@ export function DirectReservationForm({
 
   return (
     <form action={submit} className="grid gap-4 md:grid-cols-2">
-      <Input defaultValue={packageName} readOnly className="md:col-span-2" />
-      <Input defaultValue={includedTravelers} readOnly className="md:col-span-2" />
-      <Input name="firstName" placeholder="Nombre completo" className="md:col-span-2" required />
-      <Input name="email" placeholder="Correo electronico" type="email" required />
-      <Input name="phone" placeholder="Telefono / WhatsApp" />
-      <Input name="originCity" placeholder="Ciudad de origen" />
-      <Input name="departureDate" placeholder="Fecha deseada" type="date" />
+      <div className="space-y-2 md:col-span-2">
+        <label className="text-sm font-medium text-slate-700">Paquete seleccionado</label>
+        <Input defaultValue={packageName} readOnly />
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <label className="text-sm font-medium text-slate-700">Precio publicado para</label>
+        <Input defaultValue={includedTravelers} readOnly />
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <label htmlFor="reservation-name" className="text-sm font-medium text-slate-700">
+          Nombre completo del titular
+        </label>
+        <Input id="reservation-name" name="firstName" placeholder="Nombre completo" className="md:col-span-2" required />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="reservation-email" className="text-sm font-medium text-slate-700">
+          Correo electrónico
+        </label>
+        <Input id="reservation-email" name="email" placeholder="Correo electronico" type="email" required />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="reservation-phone" className="text-sm font-medium text-slate-700">
+          Teléfono o WhatsApp
+        </label>
+        <Input id="reservation-phone" name="phone" placeholder="Telefono / WhatsApp" />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="reservation-origin" className="text-sm font-medium text-slate-700">
+          Ciudad de origen
+        </label>
+        <Input id="reservation-origin" name="originCity" placeholder="Ciudad de origen" />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="reservation-date" className="text-sm font-medium text-slate-700">
+          Fecha deseada para viajar
+        </label>
+        <Input id="reservation-date" name="departureDate" type="date" />
+      </div>
+      <p className="md:col-span-2 text-xs text-slate-500">
+        Este formulario aplica cuando el paquete sí encaja tal como está publicado. Si necesitas cambiar viajeros, edades o condiciones, conviene pedir cotización personalizada.
+      </p>
       <Textarea
         name="notes"
         className="md:col-span-2"

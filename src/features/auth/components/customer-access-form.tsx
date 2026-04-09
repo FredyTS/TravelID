@@ -42,7 +42,19 @@ export function CustomerAccessForm() {
         </p>
       </div>
       <form action={onSubmit} className="space-y-4">
-        <Input name="email" placeholder="tu-correo@ejemplo.com" type="email" autoComplete="email" required />
+        <div className="space-y-2">
+          <label htmlFor="customer-access-email" className="text-sm font-medium text-slate-700">
+            Correo con el que hiciste tu reserva o cotización
+          </label>
+          <Input
+            id="customer-access-email"
+            name="email"
+            placeholder="tu-correo@ejemplo.com"
+            type="email"
+            autoComplete="email"
+            required
+          />
+        </div>
         <Button className="w-full" disabled={isPending}>
           {isPending ? (
             <>
