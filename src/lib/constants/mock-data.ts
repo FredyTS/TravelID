@@ -138,3 +138,35 @@ export const portalTrips = [
     departure: "03 dic 2026",
   },
 ];
+
+export const quoteBuilderSections = [
+  {
+    title: "Datos del cliente",
+    description: "Nombre, contacto, origen del viaje y canal de entrada.",
+  },
+  {
+    title: "Viajeros",
+    description: "Adultos, menores, edades y perfiles de viaje.",
+  },
+  {
+    title: "Conceptos",
+    description: "Hospedaje, vuelos, traslados, tours y cargos adicionales.",
+  },
+  {
+    title: "Cobranza",
+    description: "Anticipo, saldo, vigencia y condiciones visibles al cliente.",
+  },
+];
+
+export const quoteLineItems = [
+  ["Hospedaje 4 noches", "2", "$4,250", "$8,500"],
+  ["Traslado aeropuerto - hotel", "1", "$1,200", "$1,200"],
+  ["Seguro de viaje", "2", "$495", "$990"],
+  ["Fee administrativo", "1", "$350", "$350"],
+];
+
+export const orderTimeline = [
+  { title: "Pedido confirmado", detail: "El cliente acepto la propuesta y se genero el pedido." },
+  { title: "Anticipo recibido", detail: "Pago parcial registrado y saldo actualizado." },
+  { title: "Documentos pendientes", detail: "Falta cargar voucher de hotel y resumen final." },
+];
