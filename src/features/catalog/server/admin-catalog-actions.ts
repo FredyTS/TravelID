@@ -3,6 +3,7 @@
 import {
   DiscountType,
   PromotionAppliesTo,
+  SupplierStatus,
   TravelType,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -235,6 +236,70 @@ export async function saveHotelAction(formData: FormData) {
   revalidatePath("/admin/hotels");
   revalidatePath("/admin/packages");
   revalidatePath("/paquetes");
+}
+
+export async function saveSupplierAction(formData: FormData) {
+  const id = valueOrNull(formData.get("id"));
+  const name = String(formData.get("name") ?? "").trim();
+  const code = valueOrNull(formData.get("code"));
+
+  if (!name) {
+    throw new Error("El proveedor necesita nombre.");
+  }
+
+  const data = {
+    code,
+    name,
+    displayName: valueOrNull(formData.get("displayName")),
+    commercialName: valueOrNull(formData.get("commercialName")),
+    email: valueOrNull(formData.get("email")),
+    phone: valueOrNull(formData.get("phone")),
+    website: valueOrNull(formData.get("website")),
+    status: (String(formData.get("status") ?? "ACTIVE") as SupplierStatus),
+    notes: valueOrNull(formData.get("notes")),
+  };
+
+  if (id) {
+    await prisma.supplier.update({
+      where: { id },
+      data,
+    });
+  } else {
+    await prisma.supplier.create({ data });
+  }
+
+  revalidatePath("/admin/suppliers");
+  revalidatePath("/admin/hotels");
+  revalidatePath("/admin/packages");
+}
+
+export async function saveMealPlanAction(formData: FormData) {
+  const id = valueOrNull(formData.get("id"));
+  const code = String(formData.get("code") ?? "").trim();
+  const name = String(formData.get("name") ?? "").trim();
+
+  if (!code || !name) {
+    throw new Error("El plan necesita clave y nombre.");
+  }
+
+  const data = {
+    code: code.toUpperCase(),
+    name,
+    description: valueOrNull(formData.get("description")),
+  };
+
+  if (id) {
+    await prisma.mealPlan.update({
+      where: { id },
+      data,
+    });
+  } else {
+    await prisma.mealPlan.create({ data });
+  }
+
+  revalidatePath("/admin/meal-plans");
+  revalidatePath("/admin/hotels");
+  revalidatePath("/admin/packages");
 }
 
 export async function toggleHotelActiveAction(formData: FormData) {
