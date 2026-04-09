@@ -44,6 +44,10 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
+function isQuoteExpired(validUntil?: Date | null) {
+  return Boolean(validUntil && validUntil.getTime() < Date.now());
+}
+
 export async function getDefaultAdminUserId() {
   const user = await prisma.user.findFirst({
     where: {
@@ -337,6 +341,138 @@ export async function createAdminQuote(input: {
   return quote;
 }
 
+export async function markQuoteViewed(input: {
+  quoteId: string;
+  customerId: string;
+}) {
+  const quote = await prisma.quote.findFirst({
+    where: {
+      id: input.quoteId,
+      customerId: input.customerId,
+    },
+  });
+
+  if (!quote) {
+    throw new Error("Cotizacion no encontrada.");
+  }
+
+  if (isQuoteExpired(quote.validUntil) && quote.status !== QuoteStatus.CONVERTED) {
+    await prisma.quote.update({
+      where: { id: quote.id },
+      data: {
+        status: QuoteStatus.EXPIRED,
+      },
+    });
+
+    return prisma.quote.findUniqueOrThrow({
+      where: { id: quote.id },
+    });
+  }
+
+  if (quote.viewedAt) {
+    return quote;
+  }
+
+  const nextStatus =
+    quote.status === QuoteStatus.DRAFT || quote.status === QuoteStatus.SENT
+      ? QuoteStatus.VIEWED
+      : quote.status;
+
+  const updatedQuote = await prisma.quote.update({
+    where: { id: quote.id },
+    data: {
+      viewedAt: new Date(),
+      status: nextStatus,
+    },
+  });
+
+  await prisma.activityLog.create({
+    data: {
+      entityType: "Quote",
+      entityId: quote.id,
+      action: "QUOTE_VIEWED_IN_PORTAL",
+      description: `El cliente abrio la cotizacion ${quote.quoteNumber} en el portal.`,
+      actorType: "CLIENT",
+      metadata: {
+        customerId: input.customerId,
+      },
+    },
+  });
+
+  return updatedQuote;
+}
+
+export async function approveQuoteFromPortal(input: {
+  quoteId: string;
+  customerId: string;
+}) {
+  const quote = await prisma.quote.findFirst({
+    where: {
+      id: input.quoteId,
+      customerId: input.customerId,
+    },
+    include: {
+      convertedOrder: true,
+    },
+  });
+
+  if (!quote) {
+    throw new Error("Cotizacion no encontrada.");
+  }
+
+  if (quote.convertedOrder) {
+    return quote.convertedOrder;
+  }
+
+  if (quote.status === QuoteStatus.CANCELLED || quote.status === QuoteStatus.REJECTED) {
+    throw new Error("Esta cotizacion ya no puede aprobarse.");
+  }
+
+  if (isQuoteExpired(quote.validUntil)) {
+    await prisma.quote.update({
+      where: { id: quote.id },
+      data: {
+        status: QuoteStatus.EXPIRED,
+      },
+    });
+
+    throw new Error("La vigencia de esta cotizacion ya vencio. Solicita una actualizacion.");
+  }
+
+  const adminUserId = (await getDefaultAdminUserId()) ?? quote.assignedAgentId;
+
+  if (!adminUserId) {
+    throw new Error("No existe un usuario admin disponible para completar la conversion.");
+  }
+
+  await prisma.quote.update({
+    where: { id: quote.id },
+    data: {
+      status: QuoteStatus.APPROVED,
+      approvedAt: quote.approvedAt ?? new Date(),
+      viewedAt: quote.viewedAt ?? new Date(),
+    },
+  });
+
+  await prisma.activityLog.create({
+    data: {
+      entityType: "Quote",
+      entityId: quote.id,
+      action: "QUOTE_APPROVED_BY_CUSTOMER",
+      description: `El cliente aprobo la cotizacion ${quote.quoteNumber} desde el portal.`,
+      actorType: "CLIENT",
+      metadata: {
+        customerId: input.customerId,
+      },
+    },
+  });
+
+  return convertQuoteToOrder({
+    quoteId: quote.id,
+    adminUserId,
+  });
+}
+
 export async function convertQuoteToOrder(input: {
   quoteId: string;
   adminUserId: string;
@@ -356,6 +492,17 @@ export async function convertQuoteToOrder(input: {
 
   if (!quote.customerId) {
     throw new Error("La cotizacion no tiene cliente asociado.");
+  }
+
+  if (isQuoteExpired(quote.validUntil) && !quote.convertedOrderId) {
+    await prisma.quote.update({
+      where: { id: quote.id },
+      data: {
+        status: QuoteStatus.EXPIRED,
+      },
+    });
+
+    throw new Error("La cotizacion ya vencio y no puede convertirse a pedido.");
   }
 
   await ensureCustomerPortalAccess(quote.customerId);

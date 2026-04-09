@@ -55,8 +55,8 @@ export default async function PortalDashboardPage() {
           <CardContent><p className="text-3xl font-semibold">{overview.documents.length}</p></CardContent>
         </Card>
         <Card className="rounded-[2rem] border-slate-200 bg-white">
-          <CardHeader><CardTitle className="text-base">Conversaciones</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-semibold">{overview.threads.length}</p></CardContent>
+          <CardHeader><CardTitle className="text-base">Cotizaciones activas</CardTitle></CardHeader>
+          <CardContent><p className="text-3xl font-semibold">{overview.activeQuote ? 1 : 0}</p></CardContent>
         </Card>
       </div>
 
@@ -127,8 +127,30 @@ export default async function PortalDashboardPage() {
                 </Link>
               </div>
             ) : (
-              <div className="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
-                Aun no vemos un pedido visible en tu portal. Cuando tu reservacion quede lista, aparecera aqui con pagos, documentos y seguimiento.
+              <div className="space-y-4">
+                {overview.activeQuote ? (
+                  <div className="rounded-[1.75rem] border border-sky-200 bg-sky-50 p-5">
+                    <p className="font-semibold text-sky-950">Tienes una cotizacion pendiente por confirmar</p>
+                    <p className="mt-2 text-sm text-sky-900/80">
+                      Revisa la propuesta, aprueba cuando estes listo y el sistema generara tu pedido para continuar con el pago.
+                    </p>
+                    <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm text-sky-900/80">{overview.activeQuote.quoteNumber}</p>
+                        <p className="mt-1 text-2xl font-semibold text-sky-950">
+                          {formatCurrency(Number(overview.activeQuote.grandTotal))}
+                        </p>
+                      </div>
+                      <Link href={`/portal/cotizaciones/${overview.activeQuote.id}`} className="text-sm font-medium text-primary hover:underline">
+                        Revisar cotizacion
+                      </Link>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="rounded-[1.75rem] border border-dashed border-slate-300 bg-slate-50 p-5 text-sm text-slate-600">
+                    Aun no vemos un pedido visible en tu portal. Cuando tu reservacion quede lista, aparecera aqui con pagos, documentos y seguimiento.
+                  </div>
+                )}
               </div>
             )}
           </CardContent>
