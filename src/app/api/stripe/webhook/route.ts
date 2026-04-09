@@ -3,8 +3,8 @@ import { NextResponse } from "next/server";
 import Stripe from "stripe";
 import { prisma } from "@/lib/db/prisma";
 import { env } from "@/lib/env";
-
-const stripe = env.stripeSecretKey ? new Stripe(env.stripeSecretKey) : null;
+import { handleCheckoutCompleted } from "@/features/payments/server/payment-service";
+import { stripe } from "@/lib/stripe/client";
 
 export async function POST(request: Request) {
   const signature = (await headers()).get("stripe-signature");
@@ -40,6 +40,10 @@ export async function POST(request: Request) {
       payload: event as unknown as object,
     },
   });
+
+  if (event.type === "checkout.session.completed") {
+    await handleCheckoutCompleted(event.data.object as Stripe.Checkout.Session);
+  }
 
   return NextResponse.json({ ok: true, received: event.type });
 }

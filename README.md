@@ -161,3 +161,4 @@ Pendiente siguiente:
 
 - Guía de arranque local: [docs/setup-local.md](./docs/setup-local.md)
 - Resumen funcional del proyecto: [docs/project-overview.md](./docs/project-overview.md)
+- Flujo de pagos: [docs/payments.md](./docs/payments.md)

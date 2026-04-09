@@ -4,6 +4,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { CreateCheckoutButton } from "@/features/payments/components/create-checkout-button";
 
 export const dynamic = "force-dynamic";
 
@@ -18,8 +19,12 @@ export default async function AdminOrderDetailPage({
     include: {
       customer: true,
       items: true,
-      paymentSchedules: true,
-      payments: true,
+      paymentSchedules: {
+        orderBy: { dueDate: "asc" },
+      },
+      payments: {
+        orderBy: { createdAt: "desc" },
+      },
       travelUpdates: {
         orderBy: { createdAt: "desc" },
       },
@@ -69,8 +74,12 @@ export default async function AdminOrderDetailPage({
                       <TableRow key={item.id} className="border-white/10">
                         <TableCell className="text-slate-100">{item.title}</TableCell>
                         <TableCell className="text-slate-100">{item.quantity}</TableCell>
-                        <TableCell className="text-slate-100">{formatCurrency(Number(item.unitPrice))}</TableCell>
-                        <TableCell className="text-slate-100">{formatCurrency(Number(item.lineTotal))}</TableCell>
+                        <TableCell className="text-slate-100">
+                          {formatCurrency(Number(item.unitPrice))}
+                        </TableCell>
+                        <TableCell className="text-slate-100">
+                          {formatCurrency(Number(item.lineTotal))}
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -93,7 +102,7 @@ export default async function AdminOrderDetailPage({
                 ))
               ) : (
                 <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm text-slate-300">
-                  Aun no hay actualizaciones publicadas para este pedido.
+                  Aún no hay actualizaciones publicadas para este pedido.
                 </div>
               )}
             </CardContent>
@@ -108,15 +117,21 @@ export default async function AdminOrderDetailPage({
             <CardContent className="space-y-4 text-sm text-slate-300">
               <div className="flex items-center justify-between">
                 <span>Total del pedido</span>
-                <span className="font-medium text-white">{formatCurrency(Number(order.grandTotal))}</span>
+                <span className="font-medium text-white">
+                  {formatCurrency(Number(order.grandTotal))}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Pagado</span>
-                <span className="font-medium text-white">{formatCurrency(Number(order.paidTotal))}</span>
+                <span className="font-medium text-white">
+                  {formatCurrency(Number(order.paidTotal))}
+                </span>
               </div>
               <div className="flex items-center justify-between">
                 <span>Saldo pendiente</span>
-                <span className="font-medium text-white">{formatCurrency(Number(order.balanceDue))}</span>
+                <span className="font-medium text-white">
+                  {formatCurrency(Number(order.balanceDue))}
+                </span>
               </div>
             </CardContent>
           </Card>
@@ -137,8 +152,45 @@ export default async function AdminOrderDetailPage({
                   <p className="mt-2 text-xs text-slate-400">
                     Vence: {schedule.dueDate.toLocaleDateString("es-MX")} · {schedule.status}
                   </p>
+                  {schedule.status === "PENDING" ? (
+                    <div className="mt-4">
+                      <CreateCheckoutButton
+                        orderId={order.id}
+                        scheduleId={schedule.id}
+                        label={`Cobrar ${schedule.dueType.toLowerCase()} con Stripe`}
+                      />
+                    </div>
+                  ) : null}
                 </div>
               ))}
+            </CardContent>
+          </Card>
+
+          <Card className="border-white/10 bg-white/5 text-white shadow-none">
+            <CardHeader>
+              <CardTitle>Historial de pagos</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-slate-300">
+              {order.payments.length > 0 ? (
+                order.payments.map((payment) => (
+                  <div key={payment.id} className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <span>{payment.provider}</span>
+                      <span className="font-medium text-white">
+                        {formatCurrency(Number(payment.amount))}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-slate-400">
+                      {payment.status} ·{" "}
+                      {payment.paidAt ? payment.paidAt.toLocaleDateString("es-MX") : "pendiente"}
+                    </p>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-4">
+                  Aún no hay pagos registrados para este pedido.
+                </div>
+              )}
             </CardContent>
           </Card>
         </div>
