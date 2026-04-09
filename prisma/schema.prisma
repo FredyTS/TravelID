@@ -406,6 +406,7 @@ model Inquiry {
   budgetMax              Decimal?      @db.Decimal(10, 2)
   notes                  String?
   status                 InquiryStatus @default(NEW)
+  shareToken             String?       @unique
   assignedAgentId        String?
   createdAt              DateTime      @default(now())
   updatedAt              DateTime      @updatedAt
@@ -817,6 +818,7 @@ model Order {
   customerVisibleNotes String?
   internalNotes        String?
   portalEnabled        Boolean           @default(true)
+  shareToken           String?           @unique
   createdFrom          OrderCreatedFrom  @default(QUOTE)
   createdAt            DateTime          @default(now())
   updatedAt            DateTime          @updatedAt
