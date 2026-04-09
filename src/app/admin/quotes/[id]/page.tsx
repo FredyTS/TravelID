@@ -106,6 +106,18 @@ export default async function AdminQuoteDetailPage({
                 <span className="font-medium text-slate-950">{quote.status}</span>
               </div>
               <div className="flex items-center justify-between">
+                <span>Vista en portal</span>
+                <span className="font-medium text-slate-950">
+                  {quote.viewedAt ? quote.viewedAt.toLocaleDateString("es-MX") : "Pendiente"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span>Aprobada por cliente</span>
+                <span className="font-medium text-slate-950">
+                  {quote.approvedAt ? quote.approvedAt.toLocaleDateString("es-MX") : "Pendiente"}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
                 <span>Vigencia</span>
                 <span className="font-medium text-slate-950">
                   {quote.validUntil ? quote.validUntil.toLocaleDateString("es-MX") : "Sin fecha"}

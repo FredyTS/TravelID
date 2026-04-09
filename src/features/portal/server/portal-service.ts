@@ -2,7 +2,7 @@ import { DocumentVisibility } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
 export async function getPortalOverview(customerId: string) {
-  const [customer, activeOrder, orders, documents, threads] = await Promise.all([
+  const [customer, activeOrder, activeQuote, orders, documents, threads] = await Promise.all([
     prisma.customer.findUnique({
       where: { id: customerId },
       include: {
@@ -28,6 +28,17 @@ export async function getPortalOverview(customerId: string) {
           take: 5,
         },
       },
+    }),
+    prisma.quote.findFirst({
+      where: {
+        customerId,
+        visibility: "AUTH_PORTAL",
+        convertedOrderId: null,
+        status: {
+          in: ["DRAFT", "SENT", "VIEWED", "APPROVED"],
+        },
+      },
+      orderBy: [{ updatedAt: "desc" }],
     }),
     prisma.order.findMany({
       where: {
@@ -75,6 +86,7 @@ export async function getPortalOverview(customerId: string) {
   return {
     customer,
     activeOrder,
+    activeQuote,
     orders,
     documents,
     threads,
