@@ -1,6 +1,22 @@
 import { RoleKey, UserStatus } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 
+function splitCustomerName(name?: string | null) {
+  if (!name?.trim()) {
+    return {
+      firstName: "Cliente",
+      lastName: "Portal",
+    };
+  }
+
+  const [firstName, ...rest] = name.trim().split(/\s+/);
+
+  return {
+    firstName: firstName || "Cliente",
+    lastName: rest.join(" ") || "Portal",
+  };
+}
+
 export async function ensureCustomerPortalAccess(customerId: string) {
   const customer = await prisma.customer.findUnique({
     where: { id: customerId },
@@ -89,4 +105,70 @@ export async function ensureCustomerPortalAccess(customerId: string) {
   });
 
   return user;
+}
+
+export async function ensurePortalCustomerForUser(input: {
+  userId: string;
+  email: string;
+  name?: string | null;
+}) {
+  const normalizedEmail = input.email.toLowerCase();
+  const user = await prisma.user.findUnique({
+    where: { id: input.userId },
+    select: {
+      id: true,
+      customerId: true,
+      phone: true,
+      firstName: true,
+      lastName: true,
+    },
+  });
+
+  if (!user) {
+    return null;
+  }
+
+  if (user.customerId) {
+    return ensureCustomerPortalAccess(user.customerId);
+  }
+
+  const existingCustomer = await prisma.customer.findUnique({
+    where: { email: normalizedEmail },
+    select: { id: true },
+  });
+
+  const { firstName, lastName } = splitCustomerName(input.name ?? `${user.firstName} ${user.lastName}`.trim());
+
+  const customer = existingCustomer
+    ? await prisma.customer.update({
+        where: { id: existingCustomer.id },
+        data: {
+          firstName,
+          lastName,
+          email: normalizedEmail,
+          phone: user.phone ?? undefined,
+        },
+      })
+    : await prisma.customer.create({
+        data: {
+          firstName,
+          lastName,
+          email: normalizedEmail,
+          phone: user.phone ?? undefined,
+          source: "portal-email-access",
+        },
+      });
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      customerId: customer.id,
+      firstName,
+      lastName,
+      email: normalizedEmail,
+      status: UserStatus.ACTIVE,
+    },
+  });
+
+  return ensureCustomerPortalAccess(customer.id);
 }
