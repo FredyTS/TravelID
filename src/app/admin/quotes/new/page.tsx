@@ -1,12 +1,15 @@
 import { quoteBuilderSections, quoteLineItems } from "@/lib/constants/mock-data";
 import { AdminQuoteForm } from "@/features/quotes/components/admin-quote-form";
+import { getPackageOptions } from "@/features/catalog/server/catalog-service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
-export default function NewQuotePage() {
+export default async function NewQuotePage() {
+  const packageOptions = await getPackageOptions();
+
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
@@ -31,7 +34,13 @@ export default function NewQuotePage() {
               <CardTitle>Resumen comercial</CardTitle>
             </CardHeader>
             <CardContent>
-              <AdminQuoteForm />
+              <AdminQuoteForm
+                packageOptions={packageOptions.map((pkg) => ({
+                  slug: pkg.slug,
+                  name: pkg.name,
+                  destination: pkg.destination.name,
+                }))}
+              />
             </CardContent>
           </Card>
 

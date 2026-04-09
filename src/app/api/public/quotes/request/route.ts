@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db/prisma";
-import { marketingPackages } from "@/lib/constants/mock-data";
+import { getSalesPackageBySlug } from "@/features/catalog/server/catalog-service";
 
 const quoteRequestSchema = z.object({
   firstName: z.string().min(2),
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
   const json = await request.json();
   const data = quoteRequestSchema.parse(json);
   const matchedPackage = data.packageSlug
-    ? marketingPackages.find((item) => item.slug === data.packageSlug)
+    ? await getSalesPackageBySlug(data.packageSlug)
     : null;
 
   try {
@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         leadId: lead.id,
         type: "QUOTE_REQUEST",
         channel: "website",
-        packageId: undefined,
+        packageId: matchedPackage?.id,
         originCity: data.originCity,
         tentativeDate: data.tentativeDate ? new Date(data.tentativeDate) : undefined,
         adults: data.adults,

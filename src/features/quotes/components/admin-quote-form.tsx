@@ -75,7 +75,11 @@ const defaultTransferJson = JSON.stringify(
   2,
 );
 
-export function AdminQuoteForm() {
+export function AdminQuoteForm({
+  packageOptions,
+}: {
+  packageOptions: { slug: string; name: string; destination: string }[];
+}) {
   const router = useRouter();
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -155,7 +159,21 @@ export function AdminQuoteForm() {
       <Input name="customerName" placeholder="Nombre del cliente" required />
       <Input name="email" placeholder="Correo del cliente" type="email" required />
       <Input name="phone" placeholder="Telefono / WhatsApp" />
-      <Input name="packageSlug" placeholder="Slug del paquete (opcional)" />
+      <div className="md:col-span-2 space-y-2">
+        <label className="text-sm font-medium text-slate-700">Paquete base (opcional)</label>
+        <select
+          name="packageSlug"
+          defaultValue=""
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+        >
+          <option value="">Cotizacion manual / sin paquete base</option>
+          {packageOptions.map((pkg) => (
+            <option key={pkg.slug} value={pkg.slug}>
+              {pkg.name} · {pkg.destination}
+            </option>
+          ))}
+        </select>
+      </div>
       <Input name="destination" placeholder="Destino cotizado" required />
       <Input name="originCity" placeholder="Ciudad de origen" />
       <Input name="departureDateTentative" type="date" />

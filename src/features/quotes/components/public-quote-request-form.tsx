@@ -6,7 +6,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 
-export function PublicQuoteRequestForm({ selectedPackage }: { selectedPackage?: string }) {
+export function PublicQuoteRequestForm({
+  selectedPackage,
+  packageOptions,
+}: {
+  selectedPackage?: string;
+  packageOptions: { slug: string; name: string; destination: string }[];
+}) {
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -44,12 +50,21 @@ export function PublicQuoteRequestForm({ selectedPackage }: { selectedPackage?: 
       <Input name="phone" placeholder="Telefono / WhatsApp" />
       <Input name="originCity" placeholder="Ciudad de origen" />
       <Input name="tentativeDate" placeholder="Fecha tentativa" type="date" />
-      <Input
-        name="packageSlug"
-        defaultValue={selectedPackage}
-        placeholder="Paquete seleccionado"
-        className="md:col-span-2"
-      />
+      <div className="md:col-span-2 space-y-2">
+        <label className="text-sm font-medium text-slate-700">Paquete base</label>
+        <select
+          name="packageSlug"
+          defaultValue={selectedPackage}
+          className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
+        >
+          <option value="">Sin paquete base / viaje a medida</option>
+          {packageOptions.map((pkg) => (
+            <option key={pkg.slug} value={pkg.slug}>
+              {pkg.name} · {pkg.destination}
+            </option>
+          ))}
+        </select>
+      </div>
       <Input name="adults" placeholder="Numero de adultos" type="number" defaultValue={2} />
       <Input name="minors" placeholder="Numero de menores" type="number" defaultValue={0} />
       <Textarea
