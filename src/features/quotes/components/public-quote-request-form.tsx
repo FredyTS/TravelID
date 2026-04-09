@@ -45,11 +45,36 @@ export function PublicQuoteRequestForm({
 
   return (
     <form action={submit} className="grid gap-4 md:grid-cols-2">
-      <Input name="firstName" placeholder="Nombre completo" className="md:col-span-2" required />
-      <Input name="email" placeholder="Correo electronico" type="email" required />
-      <Input name="phone" placeholder="Telefono / WhatsApp" />
-      <Input name="originCity" placeholder="Ciudad de origen" />
-      <Input name="tentativeDate" placeholder="Fecha tentativa" type="date" />
+      <div className="space-y-2 md:col-span-2">
+        <label htmlFor="quote-name" className="text-sm font-medium text-slate-700">
+          Nombre completo del titular
+        </label>
+        <Input id="quote-name" name="firstName" placeholder="Nombre completo" className="md:col-span-2" required />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="quote-email" className="text-sm font-medium text-slate-700">
+          Correo electrónico
+        </label>
+        <Input id="quote-email" name="email" placeholder="Correo electronico" type="email" required />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="quote-phone" className="text-sm font-medium text-slate-700">
+          Teléfono o WhatsApp
+        </label>
+        <Input id="quote-phone" name="phone" placeholder="Telefono / WhatsApp" />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="quote-origin" className="text-sm font-medium text-slate-700">
+          Ciudad de origen
+        </label>
+        <Input id="quote-origin" name="originCity" placeholder="Ciudad de origen" />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="quote-date" className="text-sm font-medium text-slate-700">
+          Fecha tentativa del viaje
+        </label>
+        <Input id="quote-date" name="tentativeDate" type="date" />
+      </div>
       <div className="md:col-span-2 space-y-2">
         <label className="text-sm font-medium text-slate-700">Paquete base</label>
         <select
@@ -65,8 +90,18 @@ export function PublicQuoteRequestForm({
           ))}
         </select>
       </div>
-      <Input name="adults" placeholder="Numero de adultos" type="number" defaultValue={2} />
-      <Input name="minors" placeholder="Numero de menores" type="number" defaultValue={0} />
+      <div className="space-y-2">
+        <label htmlFor="quote-adults" className="text-sm font-medium text-slate-700">
+          Número de adultos
+        </label>
+        <Input id="quote-adults" name="adults" type="number" min={1} defaultValue={2} />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="quote-minors" className="text-sm font-medium text-slate-700">
+          Número de menores
+        </label>
+        <Input id="quote-minors" name="minors" type="number" min={0} defaultValue={0} />
+      </div>
       <Textarea
         name="notes"
         className="md:col-span-2"

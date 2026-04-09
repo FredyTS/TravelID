@@ -37,14 +37,25 @@ export function LoginForm() {
 
   return (
     <form action={onSubmit} className="space-y-4">
-      <Input name="email" placeholder="Email" type="email" autoComplete="email" required />
-      <Input
-        name="password"
-        placeholder="Password"
-        type="password"
-        autoComplete="current-password"
-        required
-      />
+      <div className="space-y-2">
+        <label htmlFor="admin-email" className="text-sm font-medium text-slate-700">
+          Correo del administrador
+        </label>
+        <Input id="admin-email" name="email" placeholder="admin@alondratravelmx.com" type="email" autoComplete="email" required />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="admin-password" className="text-sm font-medium text-slate-700">
+          Contraseña
+        </label>
+        <Input
+          id="admin-password"
+          name="password"
+          placeholder="Escribe tu contraseña"
+          type="password"
+          autoComplete="current-password"
+          required
+        />
+      </div>
       <Button className="w-full" disabled={isPending}>
         {isPending ? (
           <>

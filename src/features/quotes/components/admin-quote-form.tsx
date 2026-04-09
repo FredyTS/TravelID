@@ -155,10 +155,30 @@ export function AdminQuoteForm({
 
   return (
     <form action={submit} className="grid gap-4 md:grid-cols-2">
-      <Input name="title" placeholder="Titulo de la cotizacion" className="md:col-span-2" required />
-      <Input name="customerName" placeholder="Nombre del cliente" required />
-      <Input name="email" placeholder="Correo del cliente" type="email" required />
-      <Input name="phone" placeholder="Telefono / WhatsApp" />
+      <div className="space-y-2 md:col-span-2">
+        <label htmlFor="admin-quote-title" className="text-sm font-medium text-slate-700">
+          Título interno de la cotización
+        </label>
+        <Input id="admin-quote-title" name="title" placeholder="Ej. Verano en Cancun para familia Terry" className="md:col-span-2" required />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="admin-quote-customer" className="text-sm font-medium text-slate-700">
+          Nombre del cliente
+        </label>
+        <Input id="admin-quote-customer" name="customerName" placeholder="Nombre del cliente" required />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="admin-quote-email" className="text-sm font-medium text-slate-700">
+          Correo del cliente
+        </label>
+        <Input id="admin-quote-email" name="email" placeholder="Correo del cliente" type="email" required />
+      </div>
+      <div className="space-y-2">
+        <label htmlFor="admin-quote-phone" className="text-sm font-medium text-slate-700">
+          Teléfono o WhatsApp
+        </label>
+        <Input id="admin-quote-phone" name="phone" placeholder="Telefono / WhatsApp" />
+      </div>
       <div className="md:col-span-2 space-y-2">
         <label className="text-sm font-medium text-slate-700">Paquete base (opcional)</label>
         <select
@@ -174,46 +194,162 @@ export function AdminQuoteForm({
           ))}
         </select>
       </div>
-      <Input name="destination" placeholder="Destino cotizado" required />
-      <Input name="originCity" placeholder="Ciudad de origen" />
-      <Input name="departureDateTentative" type="date" />
-      <Input name="checkIn" type="date" required />
-      <Input name="checkOut" type="date" required />
-      <Input name="validUntil" type="date" />
-      <Input name="nights" type="number" defaultValue={4} min={1} />
-      <Input name="adults" type="number" defaultValue={2} min={1} />
-      <Input name="minors" type="number" defaultValue={0} min={0} />
-      <Input name="minorAges" placeholder="Edades menores. Ej: 5, 8" />
-      <Input name="subtotal" type="number" defaultValue={9990} />
-      <Input name="discountTotal" type="number" defaultValue={0} />
-      <Input name="depositRequired" type="number" defaultValue={3500} />
-      <Textarea
-        name="customerNotes"
-        className="md:col-span-2"
-        rows={4}
-        placeholder="Notas visibles al cliente"
-      />
-      <Textarea
-        name="footerNote"
-        className="md:col-span-2"
-        rows={2}
-        defaultValue="*Precio cotizado por el total en moneda mexicana, sujeto a disponibilidad y cambios sin previo aviso."
-      />
-      <Textarea
-        name="hotelsJson"
-        className="md:col-span-2 min-h-72 font-mono text-xs"
-        defaultValue={defaultHotelsJson}
-      />
-      <Textarea
-        name="flightsJson"
-        className="md:col-span-2 min-h-60 font-mono text-xs"
-        defaultValue={defaultFlightsJson}
-      />
-      <Textarea
-        name="transferJson"
-        className="md:col-span-2 min-h-48 font-mono text-xs"
-        defaultValue={defaultTransferJson}
-      />
+      <div className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
+        <p className="text-sm font-semibold text-slate-900">Datos del viaje</p>
+        <p className="mt-1 text-xs text-slate-500">Aclara fechas y ocupación antes de capturar montos o bloques de propuesta.</p>
+        <div className="mt-4 grid gap-4 md:grid-cols-2">
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-destination" className="text-sm font-medium text-slate-700">
+              Destino cotizado
+            </label>
+            <Input id="admin-quote-destination" name="destination" placeholder="Destino cotizado" required />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-origin" className="text-sm font-medium text-slate-700">
+              Ciudad de origen
+            </label>
+            <Input id="admin-quote-origin" name="originCity" placeholder="Ciudad de origen" />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-departure" className="text-sm font-medium text-slate-700">
+              Fecha tentativa de salida
+            </label>
+            <Input id="admin-quote-departure" name="departureDateTentative" type="date" />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-valid-until" className="text-sm font-medium text-slate-700">
+              Vigencia de la cotización
+            </label>
+            <Input id="admin-quote-valid-until" name="validUntil" type="date" />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-checkin" className="text-sm font-medium text-slate-700">
+              Check-in
+            </label>
+            <Input id="admin-quote-checkin" name="checkIn" type="date" required />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-checkout" className="text-sm font-medium text-slate-700">
+              Check-out
+            </label>
+            <Input id="admin-quote-checkout" name="checkOut" type="date" required />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-nights" className="text-sm font-medium text-slate-700">
+              Número de noches
+            </label>
+            <Input id="admin-quote-nights" name="nights" type="number" defaultValue={4} min={1} />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-adults" className="text-sm font-medium text-slate-700">
+              Número de adultos
+            </label>
+            <Input id="admin-quote-adults" name="adults" type="number" defaultValue={2} min={1} />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-minors" className="text-sm font-medium text-slate-700">
+              Número de menores
+            </label>
+            <Input id="admin-quote-minors" name="minors" type="number" defaultValue={0} min={0} />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-minor-ages" className="text-sm font-medium text-slate-700">
+              Edades de menores
+            </label>
+            <Input id="admin-quote-minor-ages" name="minorAges" placeholder="Ej. 5, 8" />
+          </div>
+        </div>
+      </div>
+      <div className="md:col-span-2 rounded-[1.5rem] border border-slate-200 bg-slate-50/70 p-4">
+        <p className="text-sm font-semibold text-slate-900">Resumen económico</p>
+        <p className="mt-1 text-xs text-slate-500">Estos montos alimentan el total de la cotización y lo que verá el cliente.</p>
+        <div className="mt-4 grid gap-4 md:grid-cols-3">
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-subtotal" className="text-sm font-medium text-slate-700">
+              Subtotal cotizado
+            </label>
+            <Input id="admin-quote-subtotal" name="subtotal" type="number" defaultValue={9990} />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-discount" className="text-sm font-medium text-slate-700">
+              Descuento aplicado
+            </label>
+            <Input id="admin-quote-discount" name="discountTotal" type="number" defaultValue={0} />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="admin-quote-deposit" className="text-sm font-medium text-slate-700">
+              Anticipo requerido
+            </label>
+            <Input id="admin-quote-deposit" name="depositRequired" type="number" defaultValue={3500} />
+          </div>
+        </div>
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <label htmlFor="admin-quote-notes" className="text-sm font-medium text-slate-700">
+          Notas visibles al cliente
+        </label>
+        <Textarea
+          id="admin-quote-notes"
+          name="customerNotes"
+          className="md:col-span-2"
+          rows={4}
+          placeholder="Notas visibles al cliente"
+        />
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <label htmlFor="admin-quote-footer" className="text-sm font-medium text-slate-700">
+          Leyenda legal o nota al pie
+        </label>
+        <Textarea
+          id="admin-quote-footer"
+          name="footerNote"
+          className="md:col-span-2"
+          rows={2}
+          defaultValue="*Precio cotizado por el total en moneda mexicana, sujeto a disponibilidad y cambios sin previo aviso."
+        />
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <label htmlFor="admin-quote-hotels-json" className="text-sm font-medium text-slate-700">
+          Bloque JSON de hoteles
+        </label>
+        <p className="text-xs text-slate-500">
+          Aquí capturas lo que debe aparecer en la propuesta final: hotel, plan, habitación, anticipo, saldo, precio por noche, leyenda y nota.
+        </p>
+        <Textarea
+          id="admin-quote-hotels-json"
+          name="hotelsJson"
+          className="md:col-span-2 min-h-72 font-mono text-xs"
+          defaultValue={defaultHotelsJson}
+        />
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <label htmlFor="admin-quote-flights-json" className="text-sm font-medium text-slate-700">
+          Bloque JSON de vuelos
+        </label>
+        <p className="text-xs text-slate-500">
+          Incluye segmentos, horarios y equipaje cuando la propuesta contemple vuelos.
+        </p>
+        <Textarea
+          id="admin-quote-flights-json"
+          name="flightsJson"
+          className="md:col-span-2 min-h-60 font-mono text-xs"
+          defaultValue={defaultFlightsJson}
+        />
+      </div>
+      <div className="space-y-2 md:col-span-2">
+        <label htmlFor="admin-quote-transfer-json" className="text-sm font-medium text-slate-700">
+          Bloque JSON de traslados
+        </label>
+        <p className="text-xs text-slate-500">
+          Úsalo para aeropuerto, servicio contratado y tabla de precios por hotel si aplica.
+        </p>
+        <Textarea
+          id="admin-quote-transfer-json"
+          name="transferJson"
+          className="md:col-span-2 min-h-48 font-mono text-xs"
+          defaultValue={defaultTransferJson}
+        />
+      </div>
       <Button className="md:col-span-2" disabled={isPending}>
         {isPending ? (
           <>
