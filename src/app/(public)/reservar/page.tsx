@@ -17,9 +17,9 @@ export default async function ReservePage({
     <div className="container-shell py-14">
       <div className="grid gap-8 lg:grid-cols-[0.75fr_1fr]">
         <SectionHeading
-          eyebrow="Reserva directa"
-          title="Reserva el paquete tal como esta publicado"
-          description="Este flujo aplica cuando el precio y las condiciones del paquete si encajan con tus viajeros. Si necesitas cambios, te conviene cotizacion personalizada."
+          eyebrow="Reserva inmediata"
+          title="Aparta tu paquete con el precio publicado"
+          description="Este flujo aplica cuando el paquete te funciona con la ciudad de salida y ocupación publicadas. Si necesitas cambios, te conviene una cotización personalizada."
         />
         <Card className="surface border-0">
           <CardContent className="p-7">
@@ -27,6 +27,7 @@ export default async function ReservePage({
               <DirectReservationForm
                 packageName={currentPackage.name}
                 includedTravelers={currentPackage.includedTravelers}
+                departureCity={currentPackage.departureCity}
                 packageSlug={currentPackage.slug}
               />
             ) : (

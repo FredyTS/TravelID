@@ -499,6 +499,7 @@ model Package {
   summary        String
   description    String
   locationLabel  String?
+  departureCity  String?
   heroImageUrl   String?
   galleryUrls    Json?
   marketingTags  Json?

@@ -148,6 +148,7 @@ export async function savePackageAction(formData: FormData) {
     summary: String(formData.get("summary") ?? "").trim(),
     description: String(formData.get("description") ?? "").trim(),
     locationLabel: valueOrNull(formData.get("locationLabel")),
+    departureCity: valueOrNull(formData.get("departureCity")),
     heroImageUrl: valueOrNull(formData.get("heroImageUrl")),
     galleryUrls: parseJsonStringArray(formData.get("galleryUrls")),
     marketingTags: parseJsonStringArray(formData.get("marketingTags")),

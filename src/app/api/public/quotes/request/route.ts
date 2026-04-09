@@ -51,7 +51,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       ok: true,
-      message: "Solicitud registrada. El equipo puede convertirla a quote desde el admin.",
+      message: "Solicitud registrada. Te prepararemos una cotización personalizada con base en tus condiciones.",
       inquiryId: inquiry.id,
     });
   } catch {

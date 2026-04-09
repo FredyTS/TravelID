@@ -90,6 +90,9 @@ export function PublicQuoteRequestForm({
           ))}
         </select>
       </div>
+      <p className="md:col-span-2 text-xs text-slate-500">
+        Si el paquete publicado no coincide con tu ciudad de salida, ocupación o fechas, aquí armamos la solicitud para recalcularlo.
+      </p>
       <div className="space-y-2">
         <label htmlFor="quote-adults" className="text-sm font-medium text-slate-700">
           Número de adultos

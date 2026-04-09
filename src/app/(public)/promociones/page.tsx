@@ -11,8 +11,8 @@ export default async function PromotionsPage() {
     <div className="container-shell py-14">
       <SectionHeading
         eyebrow="Promociones"
-        title="Campanas comerciales listas para publicarse"
-        description="Base del modulo de promociones publicas para campañas de temporada, anticipo flexible o descuentos por destino."
+        title="Promociones vigentes para apartar mejor tu viaje"
+        description="Revisa campañas activas, descuentos por temporada y condiciones comerciales para reservar con mejores términos."
       />
       <div className="mt-10 grid gap-6 lg:grid-cols-2">
         {currentPromotions.map((promotion) => (
