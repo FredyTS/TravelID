@@ -12,7 +12,10 @@ const adminNav = [
   { href: "/admin/quotes", label: "Cotizaciones" },
   { href: "/admin/orders", label: "Pedidos" },
   { href: "/admin/payments", label: "Pagos" },
-  { href: "/admin/packages", label: "Catalogo" },
+  { href: "/admin/packages", label: "Paquetes" },
+  { href: "/admin/destinations", label: "Destinos" },
+  { href: "/admin/hotels", label: "Hoteles" },
+  { href: "/admin/promotions", label: "Promociones" },
   { href: "/admin/activity", label: "Actividad" },
   { href: "/admin/settings", label: "Configuracion" },
 ];

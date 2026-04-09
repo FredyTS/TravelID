@@ -9,8 +9,8 @@ import {
   QuoteVisibility,
 } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
-import { marketingPackages } from "@/lib/constants/mock-data";
 import { ensureCustomerPortalAccess } from "@/features/auth/server/customer-access";
+import { getSalesPackageBySlug } from "@/features/catalog/server/catalog-service";
 import {
   renderQuoteProposalHtml,
   type QuoteProposalData,
@@ -22,6 +22,19 @@ function generateQuoteNumber() {
 
 function generateOrderNumber() {
   return `ORD-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
+}
+
+function buildIncludedTravelersLabel(input: {
+  includedAdults: number;
+  includedMinors: number;
+}) {
+  const parts = [`${input.includedAdults} adulto${input.includedAdults === 1 ? "" : "s"}`];
+
+  if (input.includedMinors > 0) {
+    parts.push(`${input.includedMinors} menor${input.includedMinors === 1 ? "" : "es"}`);
+  }
+
+  return parts.join(" y ");
 }
 
 export async function getDefaultAdminUserId() {
@@ -87,7 +100,7 @@ export async function createDirectReservation(input: {
   departureDate?: string;
   notes?: string;
 }) {
-  const travelPackage = marketingPackages.find((item) => item.slug === input.packageSlug);
+  const travelPackage = await getSalesPackageBySlug(input.packageSlug);
 
   if (!travelPackage || !travelPackage.directBookable) {
     throw new Error("Este paquete no admite reserva directa.");
@@ -103,7 +116,7 @@ export async function createDirectReservation(input: {
   await ensureCustomerPortalAccess(customer.id);
 
   const adminUserId = await getDefaultAdminUserId();
-  const subtotal = travelPackage.priceFrom;
+  const subtotal = Number(travelPackage.basePriceFrom ?? 0);
   const deposit = Math.round(subtotal * 0.3);
 
   const order = await prisma.order.create({
@@ -124,7 +137,7 @@ export async function createDirectReservation(input: {
         create: {
           itemType: PackageComponentType.OTHER,
           title: travelPackage.name,
-          description: `${travelPackage.destination} · ${travelPackage.includedTravelers}`,
+          description: `${travelPackage.destination.name} · ${buildIncludedTravelersLabel(travelPackage)}`,
           unitPrice: subtotal,
           quantity: 1,
           lineTotal: subtotal,
@@ -200,7 +213,7 @@ export async function createAdminQuote(input: {
   await ensureCustomerPortalAccess(customer.id);
 
   const matchedPackage = input.packageSlug
-    ? marketingPackages.find((item) => item.slug === input.packageSlug)
+    ? await getSalesPackageBySlug(input.packageSlug)
     : null;
   const subtotal = input.subtotal;
   const discountTotal = input.discountTotal ?? 0;
@@ -213,6 +226,8 @@ export async function createAdminQuote(input: {
       quoteNumber: generateQuoteNumber(),
       source: matchedPackage ? QuoteSource.CATALOG : QuoteSource.MANUAL,
       customerId: customer.id,
+      packageId: matchedPackage?.id,
+      destinationId: matchedPackage?.destinationId,
       assignedAgentId: input.adminUserId,
       status: QuoteStatus.DRAFT,
       visibility: QuoteVisibility.AUTH_PORTAL,
@@ -238,7 +253,7 @@ export async function createAdminQuote(input: {
           itemType: PackageComponentType.OTHER,
           title: matchedPackage?.name ?? input.title,
           description: matchedPackage
-            ? `${matchedPackage.destination} · ${matchedPackage.includedTravelers}`
+            ? `${matchedPackage.destination.name} · ${buildIncludedTravelersLabel(matchedPackage)}`
             : "Cotizacion personalizada",
           unitPrice: grandTotal,
           quantity: 1,

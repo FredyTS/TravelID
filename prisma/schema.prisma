@@ -498,6 +498,11 @@ model Package {
   slug           String             @unique
   summary        String
   description    String
+  locationLabel  String?
+  heroImageUrl   String?
+  galleryUrls    Json?
+  marketingTags  Json?
+  highlight      String?
   durationDays   Int
   durationNights Int
   travelType     TravelType
@@ -508,6 +513,10 @@ model Package {
   pricingMode    PricingMode        @default(PER_PERSON)
   minTravelers   Int                @default(1)
   maxTravelers   Int?
+  includedAdults Int                @default(2)
+  includedMinors Int                @default(0)
+  directBookable Boolean            @default(false)
+  reservationNote String?
   isActive       Boolean            @default(true)
   featured       Boolean            @default(false)
   publishedAt    DateTime?
