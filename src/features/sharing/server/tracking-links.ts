@@ -224,7 +224,7 @@ export async function sendInquiryTrackingLink(input: {
     intro: "Ya registramos tu solicitud. Desde este enlace podras darle seguimiento al estado de tu peticion mientras preparamos tu propuesta.",
     ctaUrl: shareUrl,
     ctaLabel: "Dar seguimiento a mi solicitud",
-    secondaryUrl: absoluteUrl("/login"),
+    secondaryUrl: absoluteUrl("/acceso"),
     secondaryLabel: "Entrar al portal",
     tracking: {
       category: "INQUIRY_TRACKING_LINK",

@@ -8,11 +8,11 @@ export default withAuth(
     const token = req.nextauth.token;
 
     if (pathname.startsWith("/admin") && !isAdminRole(token?.role as string | null)) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      return NextResponse.redirect(new URL("/admin-acceso", req.url));
     }
 
     if (pathname.startsWith("/portal") && !token?.customerId) {
-      return NextResponse.redirect(new URL("/login", req.url));
+      return NextResponse.redirect(new URL("/acceso", req.url));
     }
 
     return NextResponse.next();

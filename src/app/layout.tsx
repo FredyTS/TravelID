@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Playfair_Display, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import { siteConfig } from "@/config/site";
@@ -26,6 +26,7 @@ export const metadata: Metadata = {
     template: `%s | ${siteConfig.name}`,
   },
   description: siteConfig.description,
+  applicationName: siteConfig.name,
   keywords: [
     "agencia de viajes",
     "paquetes vacacionales",
@@ -34,6 +35,13 @@ export const metadata: Metadata = {
     "portal del cliente",
     "Alondra Travel MX",
   ],
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#f8fafc",
 };
 
 export default function RootLayout({
@@ -48,7 +56,7 @@ export default function RootLayout({
     >
       <body className="min-h-full bg-background text-foreground">
         {children}
-        <Toaster richColors position="top-right" />
+        <Toaster richColors position="top-center" />
       </body>
     </html>
   );

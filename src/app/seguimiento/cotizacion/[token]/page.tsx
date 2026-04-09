@@ -92,7 +92,7 @@ export default async function SharedQuotePage({
               <p className="mt-3 text-sm text-slate-600">
                 Para aprobar, pagar o mandar mensajes directos, entra al portal con el correo del cliente.
               </p>
-              <Link href="/login" className="mt-4 inline-flex text-sm font-medium text-primary hover:underline">
+              <Link href="/acceso" className="mt-4 inline-flex text-sm font-medium text-primary hover:underline">
                 Ir al portal
               </Link>
             </div>

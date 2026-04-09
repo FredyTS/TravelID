@@ -68,7 +68,7 @@ export default async function SharedInquiryPage({
               <p className="mt-2 text-sm text-slate-600">{inquiry.notes}</p>
             </div>
           ) : null}
-          <Link href="/login" className="mt-6 inline-flex text-sm font-medium text-primary hover:underline">
+          <Link href="/acceso" className="mt-6 inline-flex text-sm font-medium text-primary hover:underline">
             Entrar al portal
           </Link>
         </div>

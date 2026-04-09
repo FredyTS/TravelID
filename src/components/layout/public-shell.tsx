@@ -13,8 +13,8 @@ const links = [
 export function PublicShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen flex-col">
-      <header className="sticky top-0 z-40 border-b border-white/70 bg-background/80 backdrop-blur-xl">
-        <div className="container-shell flex min-h-20 items-center justify-between gap-6">
+      <header className="sticky top-0 z-40 border-b border-white/70 bg-background/85 backdrop-blur-xl">
+        <div className="container-shell safe-top flex min-h-18 flex-wrap items-center justify-between gap-3 py-3 sm:min-h-20 sm:gap-6 sm:py-4">
           <AppLogo />
           <nav className="hidden items-center gap-6 md:flex">
             {links.map((link) => (
@@ -23,16 +23,27 @@ export function PublicShell({ children }: { children: React.ReactNode }) {
               </Link>
             ))}
           </nav>
-          <div className="flex items-center gap-3">
-            <Button asChild variant="ghost" className="hidden md:inline-flex">
-              <Link href="/login">Entrar</Link>
+          <div className="flex w-full items-center gap-2 sm:w-auto sm:gap-3">
+            <Button asChild variant="ghost" className="flex-1 md:inline-flex md:flex-none">
+              <Link href="/acceso">Portal clientes</Link>
             </Button>
-            <Button asChild>
+            <Button asChild className="flex-1 sm:flex-none">
               <Link href={siteConfig.whatsappUrl} target="_blank" rel="noreferrer">
                 WhatsApp
               </Link>
             </Button>
           </div>
+          <nav className="mobile-scroll-row -mx-4 w-[calc(100%+2rem)] px-4 md:hidden">
+            {links.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="snap-start rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm"
+              >
+                {link.label}
+              </Link>
+            ))}
+          </nav>
         </div>
       </header>
 

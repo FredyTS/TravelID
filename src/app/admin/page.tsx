@@ -12,18 +12,18 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="space-y-8">
-      <section className="surface p-8">
+      <section className="surface p-5 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-teal-700">Operacion comercial</p>
-            <h1 className="mt-3 text-4xl">Dashboard de ventas y seguimiento</h1>
+            <h1 className="mt-3 text-3xl sm:text-4xl">Dashboard de ventas y seguimiento</h1>
             <p className="mt-3 max-w-3xl text-slate-600">
               Revisa cotizaciones, pedidos, conversaciones con clientes y cobranza pendiente desde una sola vista.
             </p>
           </div>
           <Link
             href="/admin/conversations"
-            className="inline-flex items-center rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white shadow-lg shadow-slate-950/15"
+            className="inline-flex w-full items-center justify-center rounded-full bg-slate-950 px-5 py-3 text-sm font-medium text-white shadow-lg shadow-slate-950/15 sm:w-auto"
           >
             <MessageSquareText className="mr-2 size-4" />
             Abrir conversaciones
@@ -49,7 +49,7 @@ export default async function AdminDashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
         <Card className="rounded-[2rem] border-slate-200 bg-white">
-          <CardHeader className="flex flex-row items-center justify-between">
+          <CardHeader className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
             <CardTitle>Pedidos recientes</CardTitle>
             <Link href="/admin/orders" className="text-sm font-medium text-primary hover:underline">
               Ver pedidos
@@ -77,7 +77,7 @@ export default async function AdminDashboardPage() {
 
         <div className="space-y-6">
           <Card className="rounded-[2rem] border-slate-200 bg-white">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <CardTitle>Cotizaciones por seguir</CardTitle>
               <Link href="/admin/quotes" className="text-sm font-medium text-primary hover:underline">
                 Ver cotizaciones
@@ -99,7 +99,7 @@ export default async function AdminDashboardPage() {
           </Card>
 
           <Card className="rounded-[2rem] border-slate-200 bg-white">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <CardTitle>Clientes esperando respuesta</CardTitle>
               <Link href="/admin/conversations" className="text-sm font-medium text-primary hover:underline">
                 Abrir inbox

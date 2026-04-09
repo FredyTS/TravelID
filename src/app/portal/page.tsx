@@ -21,13 +21,13 @@ export default async function PortalDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="surface p-8">
+      <div className="surface p-5 sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-6">
           <div>
             <p className="text-sm font-medium uppercase tracking-[0.24em] text-teal-700">
               Bienvenido a tu portal
             </p>
-            <h1 className="mt-3 text-4xl">
+            <h1 className="mt-3 text-3xl sm:text-4xl">
               {[overview.customer?.firstName, overview.customer?.lastName].filter(Boolean).join(" ") || "Tu viaje"}
             </h1>
             <p className="mt-3 max-w-3xl text-slate-600">
@@ -41,7 +41,7 @@ export default async function PortalDashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <Card className="rounded-[2rem] border-slate-200 bg-white">
           <CardHeader><CardTitle className="text-base">Pedidos visibles</CardTitle></CardHeader>
           <CardContent><p className="text-3xl font-semibold">{overview.orders.length}</p></CardContent>
@@ -62,7 +62,7 @@ export default async function PortalDashboardPage() {
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Card className="rounded-[2rem] border-slate-200 bg-white">
-          <CardHeader className="flex flex-row items-center justify-between gap-4">
+          <CardHeader className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
             <div>
               <CardTitle>Tu siguiente viaje</CardTitle>
               <p className="mt-2 text-sm text-slate-600">Seguimiento operativo, cobranza y documentos de tu reservacion activa.</p>
@@ -72,9 +72,9 @@ export default async function PortalDashboardPage() {
           <CardContent>
             {overview.activeOrder ? (
               <div className="space-y-5">
-                <div className="flex flex-wrap items-start justify-between gap-4 rounded-[1.75rem] bg-slate-50 p-5">
+                <div className="flex flex-wrap items-start justify-between gap-4 rounded-[1.75rem] bg-slate-50 p-4 sm:p-5">
                   <div>
-                    <p className="text-2xl font-semibold text-slate-950">{overview.activeOrder.title}</p>
+                    <p className="text-xl font-semibold text-slate-950 sm:text-2xl">{overview.activeOrder.title}</p>
                     <p className="mt-1 text-sm text-slate-500">{overview.activeOrder.orderNumber}</p>
                     <p className="mt-3 text-sm text-slate-600">
                       {overview.activeOrder.departureDate
@@ -82,7 +82,7 @@ export default async function PortalDashboardPage() {
                         : "Fecha de salida por confirmar"}
                     </p>
                   </div>
-                  <div className="min-w-52 rounded-[1.5rem] bg-white p-4 shadow-sm">
+                  <div className="w-full min-w-0 rounded-[1.5rem] bg-white p-4 shadow-sm sm:min-w-52 sm:max-w-xs">
                     <p className="text-sm text-slate-500">Saldo pendiente</p>
                     <p className="mt-2 text-3xl font-semibold text-slate-950">
                       {formatCurrency(Number(overview.activeOrder.balanceDue))}
@@ -101,7 +101,7 @@ export default async function PortalDashboardPage() {
                           Monto: {formatCurrency(Number(nextPendingSchedule.amount))} · vence {nextPendingSchedule.dueDate.toLocaleDateString("es-MX")}
                         </p>
                       </div>
-                      <div className="w-full max-w-xs">
+                      <div className="w-full max-w-sm">
                         <CreateCheckoutButton
                           orderId={overview.activeOrder.id}
                           scheduleId={nextPendingSchedule.id}
@@ -158,7 +158,7 @@ export default async function PortalDashboardPage() {
 
         <div className="space-y-6">
           <Card className="rounded-[2rem] border-slate-200 bg-white">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <CardTitle>Conversaciones</CardTitle>
               <Link href="/portal/inbox" className="text-sm font-medium text-primary hover:underline">
                 Abrir inbox
@@ -188,7 +188,7 @@ export default async function PortalDashboardPage() {
           </Card>
 
           <Card className="rounded-[2rem] border-slate-200 bg-white">
-            <CardHeader className="flex flex-row items-center justify-between">
+            <CardHeader className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <CardTitle>Documentos recientes</CardTitle>
               <Link href="/portal/documentos" className="text-sm font-medium text-primary hover:underline">
                 Ver todos
