@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { requireCustomerSession } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/prisma";
 import { canAccessCustomerResource } from "@/lib/permissions/policies";
@@ -38,6 +39,21 @@ export default async function PortalQuoteDetailPage({
         <h1 className="text-4xl">Cotizacion privada</h1>
         <p className="mt-2 text-slate-600">{quote.quoteNumber} · {quote.status}</p>
       </div>
+      {quote.proposalHtml ? (
+        <div className="rounded-[1.5rem] border border-slate-200 bg-slate-50 p-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="font-medium text-slate-950">Tu propuesta detallada ya esta lista</p>
+              <p className="mt-1 text-sm text-slate-600">
+                Incluye hoteles, vuelos, traslados, condiciones y notas visibles.
+              </p>
+            </div>
+            <Link href={`/api/quotes/${quote.id}/proposal`} target="_blank" className="text-sm font-medium text-primary hover:underline">
+              Abrir propuesta completa
+            </Link>
+          </div>
+        </div>
+      ) : null}
       <div className="grid gap-4 md:grid-cols-4">
         <div className="rounded-[1.5rem] bg-slate-50 p-4">
           <p className="text-slate-500">Total</p>

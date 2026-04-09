@@ -11,6 +11,10 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { marketingPackages } from "@/lib/constants/mock-data";
 import { ensureCustomerPortalAccess } from "@/features/auth/server/customer-access";
+import {
+  renderQuoteProposalHtml,
+  type QuoteProposalData,
+} from "@/features/quotes/server/proposal-template";
 
 function generateQuoteNumber() {
   return `Q-${new Date().getFullYear()}-${Date.now().toString().slice(-6)}`;
@@ -181,6 +185,7 @@ export async function createAdminQuote(input: {
   depositRequired?: number;
   validUntil?: string;
   customerNotes?: string;
+  proposalData?: QuoteProposalData | null;
 }) {
   const [firstName, ...rest] = input.customerName.trim().split(" ");
   const lastName = rest.join(" ") || undefined;
@@ -201,6 +206,7 @@ export async function createAdminQuote(input: {
   const discountTotal = input.discountTotal ?? 0;
   const grandTotal = Math.max(subtotal - discountTotal, 0);
   const depositRequired = input.depositRequired ?? Math.round(grandTotal * 0.3);
+  const proposalHtml = input.proposalData ? renderQuoteProposalHtml(input.proposalData) : null;
 
   const quote = await prisma.quote.create({
     data: {
@@ -224,6 +230,8 @@ export async function createAdminQuote(input: {
       balanceDue: grandTotal - depositRequired,
       validUntil: input.validUntil ? new Date(input.validUntil) : undefined,
       customerNotes: input.customerNotes,
+      proposalData: input.proposalData ?? undefined,
+      proposalHtml: proposalHtml ?? undefined,
       items: {
         create: {
           sourceType: matchedPackage ? "PACKAGE_COMPONENT" : "MANUAL",

@@ -13,7 +13,7 @@ export default function NewQuotePage() {
         <div>
           <h1 className="text-4xl text-slate-950">Nueva cotizacion</h1>
           <p className="mt-2 max-w-3xl text-slate-600">
-            Flujo base para crear una propuesta desde catalogo o de forma manual y convertirla despues en pedido.
+            Crea una propuesta comercial completa con hotel, vuelos, traslados, condiciones y notas para el cliente.
           </p>
         </div>
         <div className="flex gap-3">
@@ -97,6 +97,9 @@ export default function NewQuotePage() {
                   <p className="mt-2 text-sm text-slate-600">{section.description}</p>
                 </div>
               ))}
+              <div className="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                Usa los bloques JSON para capturar la informacion que debe salir en la plantilla final del cliente. Esta propuesta queda guardada en la cotizacion.
+              </div>
             </CardContent>
           </Card>
 

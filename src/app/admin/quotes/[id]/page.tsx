@@ -39,7 +39,18 @@ export default async function AdminQuoteDetailPage({
               : "Cotizacion sin cliente asociado"}
           </p>
         </div>
-        <Badge className="bg-amber-300 text-slate-950 hover:bg-amber-300">{quote.status}</Badge>
+        <div className="flex items-center gap-3">
+          {quote.proposalHtml ? (
+            <Link
+              href={`/api/quotes/${quote.id}/proposal`}
+              target="_blank"
+              className="text-sm font-medium text-primary hover:underline"
+            >
+              Abrir propuesta HTML
+            </Link>
+          ) : null}
+          <Badge className="bg-amber-300 text-slate-950 hover:bg-amber-300">{quote.status}</Badge>
+        </div>
       </div>
 
       <div className="grid gap-6 xl:grid-cols-[1.1fr_0.9fr]">
@@ -115,6 +126,11 @@ export default async function AdminQuoteDetailPage({
               ) : (
                 <ConvertQuoteButton quoteId={quote.id} />
               )}
+              {quote.proposalHtml ? (
+                <Link href={`/api/quotes/${quote.id}/proposal`} target="_blank" className="font-medium text-primary">
+                  Vista imprimible de la cotizacion
+                </Link>
+              ) : null}
             </CardContent>
           </Card>
         </div>
