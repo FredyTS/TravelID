@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { EmailDeliveryStatus, EmailProvider } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
-import { env } from "@/lib/env";
+import { getEmailSettings } from "@/features/settings/server/settings-service";
 
 type MailchimpWebhookMessage = {
   _id?: string;
@@ -40,13 +40,15 @@ function mapWebhookStatus(eventType?: string) {
 }
 
 export async function POST(request: Request) {
-  if (env.mailchimpTransactionalWebhookKey) {
+  const settings = await getEmailSettings();
+
+  if (settings.mailchimpTransactionalWebhookKey) {
     const incomingKey =
       request.headers.get("x-webhook-key") ??
       new URL(request.url).searchParams.get("key") ??
       request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
 
-    if (incomingKey !== env.mailchimpTransactionalWebhookKey) {
+    if (incomingKey !== settings.mailchimpTransactionalWebhookKey) {
       return NextResponse.json({ ok: false, message: "Unauthorized webhook." }, { status: 401 });
     }
   }

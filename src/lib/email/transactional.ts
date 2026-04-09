@@ -1,9 +1,7 @@
 import { EmailDeliveryStatus, EmailProvider } from "@prisma/client";
 import { Resend } from "resend";
-import { env } from "@/lib/env";
 import { prisma } from "@/lib/db/prisma";
-
-const resend = env.resendApiKey ? new Resend(env.resendApiKey) : null;
+import { getEmailSettings } from "@/features/settings/server/settings-service";
 
 type EmailTrackingInput = {
   category: string;
@@ -31,18 +29,6 @@ type MailchimpSendResult = {
   queued_reason?: string | null;
 };
 
-function getConfiguredProvider() {
-  if (env.mailchimpTransactionalApiKey) {
-    return EmailProvider.MAILCHIMP_TRANSACTIONAL;
-  }
-
-  if (resend) {
-    return EmailProvider.RESEND;
-  }
-
-  return EmailProvider.CONSOLE;
-}
-
 function mapMailchimpStatus(status?: string | null) {
   switch (status) {
     case "queued":
@@ -58,10 +44,10 @@ function mapMailchimpStatus(status?: string | null) {
   }
 }
 
-async function createEmailLog(input: SendEmailInput) {
+async function createEmailLog(input: SendEmailInput, provider: EmailProvider) {
   return prisma.emailDeliveryLog.create({
     data: {
-      provider: getConfiguredProvider(),
+      provider,
       status: EmailDeliveryStatus.PENDING,
       category: input.tracking?.category ?? "TRANSACTIONAL",
       toEmail: input.to,
@@ -88,23 +74,27 @@ async function markEmailFailed(emailLogId: string, message: string) {
 }
 
 export async function sendTransactionalEmail(input: SendEmailInput) {
-  const emailLog = await createEmailLog(input);
+  const settings = await getEmailSettings();
+  const provider = settings.activeProvider;
+  const resend = settings.resendApiKey ? new Resend(settings.resendApiKey) : null;
+  const resendFrom = `${settings.resendFromName} <${settings.resendFromEmail}>`;
+  const emailLog = await createEmailLog(input, provider);
 
   try {
-    if (env.mailchimpTransactionalApiKey) {
+    if (provider === EmailProvider.MAILCHIMP_TRANSACTIONAL && settings.mailchimpTransactionalApiKey) {
       const response = await fetch("https://mandrillapp.com/api/1.0/messages/send.json", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          key: env.mailchimpTransactionalApiKey,
+          key: settings.mailchimpTransactionalApiKey,
           message: {
             html: input.html,
             text: input.text,
             subject: input.subject,
-            from_email: env.mailchimpTransactionalFromEmail,
-            from_name: env.mailchimpTransactionalFromName,
+            from_email: settings.mailchimpTransactionalFromEmail,
+            from_name: settings.mailchimpTransactionalFromName,
             to: [{ email: input.to, type: "to" }],
             metadata: {
               emailLogId: emailLog.id,
@@ -152,7 +142,7 @@ export async function sendTransactionalEmail(input: SendEmailInput) {
       };
     }
 
-    if (!resend) {
+    if (provider === EmailProvider.CONSOLE || !resend) {
       console.info("[email:dev-fallback]", {
         to: input.to,
         subject: input.subject,
@@ -162,7 +152,7 @@ export async function sendTransactionalEmail(input: SendEmailInput) {
       await prisma.emailDeliveryLog.update({
         where: { id: emailLog.id },
         data: {
-          provider: EmailProvider.CONSOLE,
+        provider: provider === EmailProvider.RESEND && !resend ? EmailProvider.CONSOLE : provider,
           status: EmailDeliveryStatus.SENT,
           sentAt: new Date(),
           lastEventAt: new Date(),
@@ -179,7 +169,7 @@ export async function sendTransactionalEmail(input: SendEmailInput) {
     }
 
     const resendResult = await resend.emails.send({
-      from: env.emailFrom,
+      from: resendFrom,
       to: input.to,
       subject: input.subject,
       html: input.html,
@@ -231,6 +221,9 @@ export async function sendMagicLinkEmail(input: {
     `,
     tracking: {
       category: "MAGIC_LINK",
+      metadata: {
+        host: input.host,
+      },
     },
   });
 }
