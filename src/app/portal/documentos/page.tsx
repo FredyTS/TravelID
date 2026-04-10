@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Prisma } from "@prisma/client";
 import { requireCustomerSession } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/prisma";
 
@@ -25,7 +26,7 @@ export default async function PortalDocumentsPage() {
             customerId: session.user.customerId,
             visibility: "AUTH_PORTAL",
             proposalData: {
-              not: null,
+              not: Prisma.AnyNull,
             },
           },
           orderBy: { updatedAt: "desc" },
