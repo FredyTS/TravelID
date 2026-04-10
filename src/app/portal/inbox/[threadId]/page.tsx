@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import { requireCustomerSession } from "@/lib/auth/guards";
 import { getCustomerThread } from "@/features/communications/server/communications-service";
 import { MessageComposer } from "@/features/communications/components/message-composer";
@@ -14,13 +14,13 @@ export default async function PortalThreadDetailPage({
   const { threadId } = await params;
 
   if (!session?.user.customerId) {
-    notFound();
+    redirect(`/acceso?next=${encodeURIComponent(`/portal/inbox/${threadId}`)}`);
   }
 
   const thread = await getCustomerThread(threadId, session.user.customerId);
 
   if (!thread) {
-    notFound();
+    redirect("/portal/inbox");
   }
 
   return (

@@ -6,7 +6,7 @@ import { LoaderCircle, MailCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
-export function CustomerAccessForm() {
+export function CustomerAccessForm({ callbackUrl = "/portal" }: { callbackUrl?: string }) {
   const [sentTo, setSentTo] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -21,7 +21,7 @@ export function CustomerAccessForm() {
       const result = await signIn("email", {
         email,
         redirect: false,
-        callbackUrl: "/portal",
+        callbackUrl,
       });
 
       if (result?.error) {
