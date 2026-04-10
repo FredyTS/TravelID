@@ -9,6 +9,11 @@ import {
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db/prisma";
 import { toSlug } from "@/lib/utils";
+import {
+  buildPackageCommercialBreakdownFromInputs,
+  buildPackageComponentCreateManyInput,
+  parsePackageCommercialComponents,
+} from "@/features/catalog/server/package-commercials";
 
 function valueOrNull(value: FormDataEntryValue | null) {
   const normalized = String(value ?? "").trim();
@@ -321,9 +326,24 @@ export async function savePackageAction(formData: FormData) {
   const id = valueOrNull(formData.get("id"));
   const name = String(formData.get("name") ?? "").trim();
   const destinationId = String(formData.get("destinationId") ?? "");
+  const components = parsePackageCommercialComponents(formData.get("componentsJson"));
 
   if (!name || !destinationId) {
     throw new Error("El paquete necesita nombre y destino.");
+  }
+
+  const directBookable = parseBoolean(formData.get("directBookable"));
+  const manualBasePrice = parseNumber(formData.get("basePriceFrom"), 0);
+  const computedBreakdown = buildPackageCommercialBreakdownFromInputs({
+    basePriceFrom: manualBasePrice,
+    baseCurrency: "MXN",
+    components,
+  });
+
+  if (directBookable && computedBreakdown.total <= 0) {
+    throw new Error(
+      "La reserva inmediata necesita un precio final mayor a 0. Agrega la composicion comercial o captura un precio publicado valido.",
+    );
   }
 
   const data = {
@@ -347,36 +367,46 @@ export async function savePackageAction(formData: FormData) {
     durationDays: parseNumber(formData.get("durationDays"), 5),
     durationNights: parseNumber(formData.get("durationNights"), 4),
     travelType: String(formData.get("travelType") ?? "BEACH") as TravelType,
-    basePriceFrom: parseNumber(formData.get("basePriceFrom"), 0),
+    basePriceFrom: computedBreakdown.total > 0 ? computedBreakdown.total : manualBasePrice,
     minTravelers: parseNumber(formData.get("minTravelers"), 1),
     maxTravelers: valueOrNull(formData.get("maxTravelers"))
       ? parseNumber(formData.get("maxTravelers"), 1)
       : null,
     includedAdults: parseNumber(formData.get("includedAdults"), 2),
     includedMinors: parseNumber(formData.get("includedMinors"), 0),
-    directBookable: parseBoolean(formData.get("directBookable")),
+    directBookable,
     reservationNote: valueOrNull(formData.get("reservationNote")),
     isActive: parseBoolean(formData.get("isActive")),
     featured: parseBoolean(formData.get("featured")),
     publishedAt: parseBoolean(formData.get("isActive")) ? new Date() : null,
   };
 
-  if (id) {
-    await prisma.package.update({
-      where: { id },
-      data,
-    });
-  } else {
-    await prisma.package.create({
-      data: {
-        ...data,
-      },
+  const travelPackage = id
+    ? await prisma.package.update({
+        where: { id },
+        data,
+      })
+    : await prisma.package.create({
+        data: {
+          ...data,
+        },
+      });
+
+  await prisma.packageComponent.deleteMany({
+    where: { packageId: travelPackage.id },
+  });
+
+  if (components.length > 0) {
+    await prisma.packageComponent.createMany({
+      data: buildPackageComponentCreateManyInput(travelPackage.id, components),
     });
   }
 
   revalidatePath("/admin/packages");
   revalidatePath("/admin/hotels");
   revalidatePath("/paquetes");
+  revalidatePath(`/paquetes/${travelPackage.slug}`);
+  revalidatePath("/reservar");
   revalidatePath("/");
   revalidatePath("/promociones");
 }

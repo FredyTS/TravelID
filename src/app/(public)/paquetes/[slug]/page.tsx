@@ -71,6 +71,31 @@ export default async function PackageDetailPage({
               <li>Actualizaciones y detalles del viaje en un solo lugar</li>
             </ul>
           </div>
+
+          {travelPackage.includedPriceBreakdown.length > 0 ? (
+            <div className="surface p-6">
+              <h2 className="text-2xl">Composicion del precio publicado</h2>
+              <div className="mt-4 space-y-3">
+                {travelPackage.includedPriceBreakdown.map((item) => (
+                  <div
+                    key={`${item.type}-${item.title}-${item.lineTotal}`}
+                    className="flex flex-wrap items-start justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3"
+                  >
+                    <div>
+                      <p className="font-medium text-slate-950">{item.title}</p>
+                      {item.description ? <p className="text-sm text-slate-600">{item.description}</p> : null}
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm text-slate-500">
+                        {item.quantity} x ${item.unitPrice.toLocaleString("es-MX")} MXN
+                      </p>
+                      <p className="font-semibold text-slate-950">${item.lineTotal.toLocaleString("es-MX")} MXN</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
         </div>
 
         <Card className="surface border-0">

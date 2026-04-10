@@ -1,4 +1,6 @@
 import {
+  BookingType,
+  FulfillmentStatus,
   OrderCreatedFrom,
   OrderStatus,
   PackageComponentType,
@@ -13,6 +15,11 @@ import {
 import { prisma } from "@/lib/db/prisma";
 import { ensureCustomerPortalAccess } from "@/features/auth/server/customer-access";
 import { getSalesPackageBySlug } from "@/features/catalog/server/catalog-service";
+import {
+  buildPackageCommercialBreakdown,
+  getPackageReservationItems,
+  isReservationBookableComponent,
+} from "@/features/catalog/server/package-commercials";
 import { renderQuoteProposalHtml, type QuoteProposalData } from "@/features/quotes/server/proposal-template";
 import { sendCustomerMessage } from "@/features/communications/server/communications-service";
 
@@ -55,6 +62,21 @@ function clamp(value: number, min: number, max: number) {
 
 function isQuoteExpired(validUntil?: Date | null) {
   return Boolean(validUntil && validUntil.getTime() < Date.now());
+}
+
+function packageComponentTypeToBookingType(type: PackageComponentType) {
+  switch (type) {
+    case PackageComponentType.HOTEL:
+      return BookingType.HOTEL;
+    case PackageComponentType.FLIGHT:
+      return BookingType.FLIGHT;
+    case PackageComponentType.TRANSFER:
+      return BookingType.TRANSFER;
+    case PackageComponentType.TOUR:
+      return BookingType.TOUR;
+    default:
+      return BookingType.OTHER;
+  }
 }
 
 export async function getDefaultAdminUserId() {
@@ -135,7 +157,35 @@ export async function createDirectReservation(input: {
   await ensureCustomerPortalAccess(customer.id);
 
   const adminUserId = await getDefaultAdminUserId();
-  const subtotal = Number(travelPackage.basePriceFrom ?? 0);
+  const commercialBreakdown = buildPackageCommercialBreakdown({
+    packageBasePrice: travelPackage.basePriceFrom,
+    packageCurrency: travelPackage.baseCurrency,
+    components: travelPackage.components,
+  });
+  const reservationItems = getPackageReservationItems({
+    packageName: travelPackage.name,
+    destinationName: travelPackage.destination.name,
+    includedAdults: travelPackage.includedAdults,
+    includedMinors: travelPackage.includedMinors,
+    departureCity: travelPackage.departureCity,
+    supplierName: travelPackage.supplier?.displayName ?? travelPackage.supplier?.name ?? null,
+    hotelName: travelPackage.hotel?.name ?? null,
+    mealPlanName: travelPackage.mealPlan?.name ?? null,
+    roomTypeName: travelPackage.defaultRoomType?.name ?? null,
+    bookingConditionsSummary: travelPackage.bookingConditionsSummary ?? null,
+    priceBasis: travelPackage.priceBasis ?? null,
+    packageBasePrice: travelPackage.basePriceFrom,
+    packageCurrency: travelPackage.baseCurrency,
+    components: travelPackage.components,
+  });
+  const subtotal = commercialBreakdown.total;
+
+  if (subtotal <= 0) {
+    throw new Error(
+      "Este paquete no tiene un precio final valido para reserva inmediata. Actualiza su composicion comercial antes de venderlo directo.",
+    );
+  }
+
   const deposit = Math.round(subtotal * 0.3);
 
   const order = await prisma.order.create({
@@ -145,6 +195,9 @@ export async function createDirectReservation(input: {
       assignedAgentId: adminUserId,
       createdFrom: OrderCreatedFrom.CATALOG,
       status: OrderStatus.AWAITING_DEPOSIT,
+      fulfillmentStatus: reservationItems.some((item) => isReservationBookableComponent(item.itemType))
+        ? FulfillmentStatus.BOOKING_IN_PROGRESS
+        : FulfillmentStatus.NOT_STARTED,
       title: travelPackage.name,
       departureDate: input.departureDate ? new Date(input.departureDate) : undefined,
       subtotal,
@@ -153,23 +206,17 @@ export async function createDirectReservation(input: {
       depositDueDate: new Date(),
       customerVisibleNotes: input.notes,
       items: {
-        create: {
-          itemType: PackageComponentType.OTHER,
-          title: travelPackage.name,
+        create: reservationItems.map((item) => ({
+          itemType: item.itemType,
+          title: item.title,
           description: `${travelPackage.destination.name} · ${buildIncludedTravelersLabel(travelPackage)}`,
-          unitPrice: subtotal,
-          quantity: 1,
-          lineTotal: subtotal,
-          metadata: {
-            departureCity: travelPackage.departureCity,
-            supplierName: travelPackage.supplier?.displayName ?? travelPackage.supplier?.name ?? null,
-            hotelName: travelPackage.hotel?.name ?? null,
-            mealPlanName: travelPackage.mealPlan?.name ?? null,
-            roomTypeName: travelPackage.defaultRoomType?.name ?? null,
-            bookingConditionsSummary: travelPackage.bookingConditionsSummary ?? null,
-            priceBasis: travelPackage.priceBasis ?? null,
-          },
-        },
+          unitPrice: item.unitPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+          currency: item.currency,
+          sortOrder: item.sortOrder,
+          metadata: item.metadata,
+        })),
       },
       paymentSchedules: {
         create: [
@@ -189,9 +236,28 @@ export async function createDirectReservation(input: {
       },
     },
     include: {
+      items: true,
       paymentSchedules: true,
     },
   });
+
+  const bookingCandidates = order.items.filter((item) => isReservationBookableComponent(item.itemType));
+
+  if (bookingCandidates.length > 0) {
+    await prisma.booking.createMany({
+      data: bookingCandidates.map((item) => ({
+        orderId: order.id,
+        orderItemId: item.id,
+        supplierId:
+          travelPackage.components.find((component) => component.sortOrder === item.sortOrder)?.supplierId ??
+          travelPackage.supplierId ??
+          null,
+        bookingType: packageComponentTypeToBookingType(item.itemType),
+        travelStartDate: input.departureDate ? new Date(input.departureDate) : undefined,
+        notes: "Generada automaticamente desde reserva inmediata de paquete.",
+      })),
+    });
+  }
 
   await prisma.activityLog.create({
     data: {

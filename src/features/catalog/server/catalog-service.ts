@@ -8,6 +8,7 @@ import {
   type Promotion,
 } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
+import { buildPackageCommercialBreakdown, deriveReservationNote } from "@/features/catalog/server/package-commercials";
 
 const publicPackageInclude = {
   destination: true,
@@ -15,6 +16,11 @@ const publicPackageInclude = {
   mealPlan: true,
   supplier: true,
   defaultRoomType: true,
+  components: {
+    orderBy: {
+      sortOrder: "asc",
+    },
+  },
 } satisfies Prisma.PackageInclude;
 
 type PublicPackageRecord = Prisma.PackageGetPayload<{
@@ -27,6 +33,11 @@ const adminPackageInclude = {
   supplier: true,
   mealPlan: true,
   defaultRoomType: true,
+  components: {
+    orderBy: {
+      sortOrder: "asc",
+    },
+  },
   promotions: true,
 } satisfies Prisma.PackageInclude;
 
@@ -79,6 +90,12 @@ function buildDuration(record: Pick<Package, "durationDays" | "durationNights">)
 }
 
 function mapPackageForPublic(record: PublicPackageRecord) {
+  const commercialBreakdown = buildPackageCommercialBreakdown({
+    packageBasePrice: record.basePriceFrom,
+    packageCurrency: record.baseCurrency,
+    components: record.components,
+  });
+
   return {
     id: record.id,
     slug: record.slug,
@@ -96,7 +113,12 @@ function mapPackageForPublic(record: PublicPackageRecord) {
     duration: buildDuration(record),
     durationDays: record.durationDays,
     durationNights: record.durationNights,
-    priceFrom: decimalToNumber(record.basePriceFrom),
+    priceFrom: commercialBreakdown.total,
+    priceCurrency: commercialBreakdown.currency,
+    priceBreakdown: commercialBreakdown.pricedItems,
+    includedPriceBreakdown: commercialBreakdown.includedItems,
+    optionalPriceBreakdown: commercialBreakdown.optionalItems,
+    hasStructuredPricing: commercialBreakdown.hasStructuredPricing,
     travelType: formatTravelType(record.travelType),
     featured: record.featured,
     highlight: record.highlight ?? "Consulta disponibilidad y condiciones.",
@@ -111,9 +133,7 @@ function mapPackageForPublic(record: PublicPackageRecord) {
       record.bookingConditionsSummary ??
       `${record.departureCity ?? "Ciudad de Mexico"} · ${record.defaultRoomType?.name ?? "Habitacion base"} · ${record.mealPlan?.name ?? "Plan por confirmar"}`,
     priceBasis: record.priceBasis ?? null,
-    reservationNote:
-      record.reservationNote ??
-      "El precio publicado aplica para la ciudad de salida indicada. Si cambian viajeros, edades o ciudad de salida, conviene una cotizacion personalizada.",
+    reservationNote: deriveReservationNote(record),
   };
 }
 
@@ -227,6 +247,11 @@ export async function getSalesPackageBySlug(slug: string) {
       supplier: true,
       mealPlan: true,
       defaultRoomType: true,
+      components: {
+        orderBy: {
+          sortOrder: "asc",
+        },
+      },
     },
   });
 }
