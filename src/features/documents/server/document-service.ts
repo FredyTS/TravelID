@@ -340,7 +340,7 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
   const pageWidth = 595;
   const pageHeight = 842;
   const margin = 40;
-  let page = pdfDoc.addPage([pageWidth, pageHeight]);
+  let page!: PDFPage;
   let y = pageHeight;
 
   const createPage = () => {

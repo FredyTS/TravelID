@@ -108,11 +108,11 @@ export async function sendQuoteShareLink(input: {
     email: input.recipientEmail,
     recipientName: quote.customer?.firstName ?? null,
     subject: `Tu cotizacion ${quote.quoteNumber} ya esta lista`,
-    intro: `Preparamos tu propuesta ${quote.title}. Puedes revisar el resumen y la propuesta compartida desde este enlace.`,
+    intro: `Preparamos tu propuesta ${quote.title}. Puedes revisar el resumen compartido y tambien encontrar esta cotizacion dentro de tu portal para aprobarla, pedir cambios o descargar su PDF.`,
     ctaUrl: shareUrl,
     ctaLabel: "Ver cotizacion compartida",
     secondaryUrl: portalUrl,
-    secondaryLabel: "Entrar al portal completo",
+    secondaryLabel: "Abrir cotizacion en mi portal",
     tracking: {
       category: "QUOTE_SHARE_LINK",
       quoteId: quote.id,
