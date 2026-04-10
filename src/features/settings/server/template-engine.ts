@@ -11,7 +11,7 @@ export function renderTemplate(template: string, variables: Record<string, strin
   return template.replace(/\{\{\s*([a-zA-Z0-9_]+)\s*\}\}/g, (_match, key: string) => variables[key] ?? "");
 }
 
-function decodeHtmlEntities(value: string) {
+function decodeHtmlEntities(value: string): string {
   return value
     .replaceAll("&nbsp;", " ")
     .replaceAll("&amp;", "&")
@@ -21,14 +21,14 @@ function decodeHtmlEntities(value: string) {
     .replaceAll("&#039;", "'");
 }
 
-export function htmlToPlainText(html: string) {
+export function htmlToPlainText(html: string): string {
   return decodeHtmlEntities(
     html
       .replace(/<\s*br\s*\/?>/gi, "\n")
       .replace(/<\/\s*(p|div|section|article|tr|table|header|footer|h[1-6]|li)\s*>/gi, "\n")
       .replace(/<li[^>]*>/gi, "- ")
       .replace(
-        /<a\b[^>]*href=(["'])(.*?)\1[^>]*>(.*?)<\/a>/gis,
+        /<a\b[^>]*href=(["'])(.*?)\1[^>]*>([\s\S]*?)<\/a>/gi,
         (_match, _quote: string, href: string, content: string) => {
           const label = htmlToPlainText(content).trim();
           return label && label !== href ? `${label} (${href})` : href;

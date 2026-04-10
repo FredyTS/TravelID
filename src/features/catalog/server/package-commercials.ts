@@ -156,8 +156,7 @@ export function parsePackageCommercialComponents(
     return [];
   }
 
-  return parsed
-    .map((item) => {
+  const components = parsed.map((item): PackageCommercialComponentInput | null => {
       const raw = (item ?? {}) as Record<string, unknown>;
       const title = normalizeString(raw.title);
 
@@ -187,8 +186,9 @@ export function parsePackageCommercialComponents(
         pricingReference: normalizeString(raw.pricingReference),
         notes: normalizeString(raw.notes),
       } satisfies PackageCommercialComponentInput;
-    })
-    .filter((item): item is PackageCommercialComponentInput => Boolean(item));
+    });
+
+  return components.filter((item): item is PackageCommercialComponentInput => item !== null);
 }
 
 export function serializePackageCommercialMetadata(input: PackageCommercialComponentInput) {
