@@ -5,6 +5,7 @@ import { isAdminRole } from "@/lib/permissions/policies";
 export default withAuth(
   function proxy(req) {
     const pathname = req.nextUrl.pathname;
+    const nextPath = `${req.nextUrl.pathname}${req.nextUrl.search}`;
     const token = req.nextauth.token;
 
     if (pathname.startsWith("/admin") && !isAdminRole(token?.role as string | null)) {
@@ -12,7 +13,9 @@ export default withAuth(
     }
 
     if (pathname.startsWith("/portal") && !token?.customerId) {
-      return NextResponse.redirect(new URL("/acceso", req.url));
+      const loginUrl = new URL("/acceso", req.url);
+      loginUrl.searchParams.set("next", nextPath);
+      return NextResponse.redirect(loginUrl);
     }
 
     return NextResponse.next();
