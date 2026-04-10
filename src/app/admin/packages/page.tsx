@@ -1,7 +1,6 @@
 import Link from "next/link";
-import { TravelType } from "@prisma/client";
-import { savePackageAction, togglePackageFlagAction } from "@/features/catalog/server/admin-catalog-actions";
-import { PackagePricingEditor } from "@/features/catalog/components/package-pricing-editor";
+import { togglePackageFlagAction } from "@/features/catalog/server/admin-catalog-actions";
+import { AdminPackageForm } from "@/features/catalog/components/admin-package-form";
 import {
   getAdminCatalogOverview,
   getAdminPackageById,
@@ -15,19 +14,7 @@ import { formatCurrency } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Textarea } from "@/components/ui/textarea";
-
-const travelTypeOptions: { value: TravelType; label: string }[] = [
-  { value: "BEACH", label: "Playa" },
-  { value: "CITY", label: "Ciudad" },
-  { value: "ADVENTURE", label: "Aventura" },
-  { value: "HONEYMOON", label: "Luna de miel" },
-  { value: "FAMILY", label: "Familiar" },
-  { value: "CRUISE", label: "Crucero" },
-  { value: "CUSTOM", label: "Personalizado" },
-];
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +34,63 @@ export default async function AdminPackagesPage({
     getHotelRoomTypeOptions(),
     editId ? getAdminPackageById(editId) : Promise.resolve(null),
   ]);
-  const formKey = currentPackage?.id ?? "new-package";
+
+  const packageFormValues = {
+    id: currentPackage?.id ?? "",
+    name: currentPackage?.name ?? "",
+    slug: currentPackage?.slug ?? "",
+    travelType: currentPackage?.travelType ?? "BEACH",
+    destinationId: currentPackage?.destinationId ?? destinations[0]?.id ?? "",
+    hotelId: currentPackage?.hotelId ?? "",
+    supplierId: currentPackage?.supplierId ?? "",
+    locationLabel: currentPackage?.locationLabel ?? "",
+    departureCity: currentPackage?.departureCity ?? "",
+    mealPlanId: currentPackage?.mealPlanId ?? "",
+    defaultRoomTypeId: currentPackage?.defaultRoomTypeId ?? "",
+    summary: currentPackage?.summary ?? "",
+    description: currentPackage?.description ?? "",
+    priceBasis: currentPackage?.priceBasis ?? "",
+    bookingConditionsSummary: currentPackage?.bookingConditionsSummary ?? "",
+    heroImageUrl: currentPackage?.heroImageUrl ?? "",
+    highlight: currentPackage?.highlight ?? "",
+    galleryUrls: Array.isArray(currentPackage?.galleryUrls) ? currentPackage.galleryUrls.join(", ") : "",
+    marketingTags: Array.isArray(currentPackage?.marketingTags) ? currentPackage.marketingTags.join(", ") : "",
+    durationDays: currentPackage?.durationDays ?? 5,
+    durationNights: currentPackage?.durationNights ?? 4,
+    basePriceFrom: Number(currentPackage?.basePriceFrom ?? 0),
+    includedAdults: currentPackage?.includedAdults ?? 2,
+    includedMinors: currentPackage?.includedMinors ?? 0,
+    minTravelers: currentPackage?.minTravelers ?? 1,
+    reservationNote: currentPackage?.reservationNote ?? "",
+    directBookable: currentPackage?.directBookable ?? false,
+    featured: currentPackage?.featured ?? false,
+    isActive: currentPackage ? currentPackage.isActive : true,
+    components:
+      currentPackage?.components.map((component) => {
+        const metadata =
+          component.metadata && typeof component.metadata === "object" && !Array.isArray(component.metadata)
+            ? (component.metadata as Record<string, unknown>)
+            : {};
+
+        return {
+          type: component.type,
+          title: component.title,
+          description: component.description ?? "",
+          quantity: Number(metadata.quantity ?? 1),
+          unitPrice: Number(metadata.unitPrice ?? 0),
+          currency: String(metadata.currency ?? "MXN"),
+          isIncluded: component.isIncluded,
+          supplierId: component.supplierId ?? "",
+          hotelId: component.hotelId ?? "",
+          roomTypeId: component.roomTypeId ?? "",
+          mealPlanId: component.mealPlanId ?? "",
+          originCity: component.originCity ?? "",
+          destinationCity: component.destinationCity ?? "",
+          pricingReference: component.pricingReference ?? "",
+          notes: String(metadata.notes ?? ""),
+        };
+      }) ?? [],
+  };
 
   return (
     <div className="space-y-8">
@@ -77,267 +120,30 @@ export default async function AdminPackagesPage({
             ) : null}
           </CardHeader>
           <CardContent>
-            <form key={formKey} action={savePackageAction} className="grid gap-4">
-              <input type="hidden" name="id" defaultValue={currentPackage?.id ?? ""} />
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium text-slate-700">Nombre</label>
-                  <Input name="name" defaultValue={currentPackage?.name ?? ""} required />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Slug</label>
-                  <Input name="slug" defaultValue={currentPackage?.slug ?? ""} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Tipo de viaje</label>
-                  <select
-                    name="travelType"
-                    defaultValue={currentPackage?.travelType ?? "BEACH"}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  >
-                    {travelTypeOptions.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Destino</label>
-                  <select
-                    name="destinationId"
-                    defaultValue={currentPackage?.destinationId ?? destinations[0]?.id}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                    required
-                  >
-                    {destinations.map((destination) => (
-                      <option key={destination.id} value={destination.id}>
-                        {destination.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Hotel sugerido</label>
-                  <select
-                    name="hotelId"
-                    defaultValue={currentPackage?.hotelId ?? ""}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  >
-                    <option value="">Sin hotel vinculado</option>
-                    {hotels.map((hotel) => (
-                      <option key={hotel.id} value={hotel.id}>
-                        {hotel.name} · {hotel.destination.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Proveedor base</label>
-                  <select
-                    name="supplierId"
-                    defaultValue={currentPackage?.supplierId ?? ""}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  >
-                    <option value="">Sin proveedor principal</option>
-                    {suppliers.map((supplier) => (
-                      <option key={supplier.id} value={supplier.id}>
-                        {(supplier.displayName ?? supplier.name) + (supplier.code ? ` · ${supplier.code}` : "")}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Ubicacion visible</label>
-                  <Input name="locationLabel" defaultValue={currentPackage?.locationLabel ?? ""} placeholder="Caribe Mexicano" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Ciudad de salida incluida</label>
-                  <Input name="departureCity" defaultValue={currentPackage?.departureCity ?? ""} placeholder="Ciudad de Mexico" />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Plan base</label>
-                  <select
-                    name="mealPlanId"
-                    defaultValue={currentPackage?.mealPlanId ?? ""}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  >
-                    <option value="">Plan por definir</option>
-                    {mealPlans.map((mealPlan) => (
-                      <option key={mealPlan.id} value={mealPlan.id}>
-                        {mealPlan.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Habitacion base</label>
-                  <select
-                    name="defaultRoomTypeId"
-                    defaultValue={currentPackage?.defaultRoomTypeId ?? ""}
-                    className="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900"
-                  >
-                    <option value="">Habitacion por definir</option>
-                    {roomTypes.map((roomType) => (
-                      <option key={roomType.id} value={roomType.id}>
-                        {roomType.name} · {roomType.hotel.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Resumen corto</label>
-                <Textarea name="summary" rows={3} defaultValue={currentPackage?.summary ?? ""} required />
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Descripcion</label>
-                <Textarea name="description" rows={5} defaultValue={currentPackage?.description ?? ""} required />
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Base de precio publicada</label>
-                  <Input
-                    name="priceBasis"
-                    defaultValue={currentPackage?.priceBasis ?? ""}
-                    placeholder="Tarifa publicada desde Chihuahua para 2 adultos"
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Condiciones de reserva inmediata</label>
-                  <Input
-                    name="bookingConditionsSummary"
-                    defaultValue={currentPackage?.bookingConditionsSummary ?? ""}
-                    placeholder="Salida desde CDMX, Junior Suite, plan all inclusive"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Imagen hero</label>
-                  <Input name="heroImageUrl" defaultValue={currentPackage?.heroImageUrl ?? ""} placeholder="https://..." />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Highlight comercial</label>
-                  <Input name="highlight" defaultValue={currentPackage?.highlight ?? ""} placeholder="Anticipo desde..." />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium text-slate-700">Galeria</label>
-                  <Input
-                    name="galleryUrls"
-                    defaultValue={Array.isArray(currentPackage?.galleryUrls) ? currentPackage.galleryUrls.join(", ") : ""}
-                    placeholder="URL1, URL2, URL3"
-                  />
-                </div>
-                <div className="space-y-2 md:col-span-2">
-                  <label className="text-sm font-medium text-slate-700">Tags de marketing</label>
-                  <Input
-                    name="marketingTags"
-                    defaultValue={Array.isArray(currentPackage?.marketingTags) ? currentPackage.marketingTags.join(", ") : ""}
-                    placeholder="All inclusive, Traslados, Familiar"
-                  />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Dias</label>
-                  <Input name="durationDays" type="number" min={1} defaultValue={currentPackage?.durationDays ?? 5} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Noches</label>
-                  <Input name="durationNights" type="number" min={1} defaultValue={currentPackage?.durationNights ?? 4} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Precio manual de referencia</label>
-                  <Input
-                    name="basePriceFrom"
-                    type="number"
-                    min={0}
-                    defaultValue={Number(currentPackage?.basePriceFrom ?? 0)}
-                  />
-                  <p className="text-xs text-slate-500">
-                    Si capturas cargos abajo, este valor se recalcula automaticamente con la composicion comercial.
-                  </p>
-                </div>
-              </div>
-
-              <PackagePricingEditor
-                key={`pricing-editor-${formKey}`}
-                initialValue={currentPackage?.components.map((component) => {
-                  const metadata =
-                    component.metadata && typeof component.metadata === "object" && !Array.isArray(component.metadata)
-                      ? (component.metadata as Record<string, unknown>)
-                      : {};
-
-                  return {
-                    type: component.type,
-                    title: component.title,
-                    description: component.description ?? "",
-                    quantity: Number(metadata.quantity ?? 1),
-                    unitPrice: Number(metadata.unitPrice ?? 0),
-                    currency: String(metadata.currency ?? "MXN"),
-                    isIncluded: component.isIncluded,
-                    supplierId: component.supplierId ?? "",
-                    hotelId: component.hotelId ?? "",
-                    roomTypeId: component.roomTypeId ?? "",
-                    mealPlanId: component.mealPlanId ?? "",
-                    originCity: component.originCity ?? "",
-                    destinationCity: component.destinationCity ?? "",
-                    pricingReference: component.pricingReference ?? "",
-                    notes: String(metadata.notes ?? ""),
-                  };
-                })}
-              />
-
-              <div className="grid gap-4 md:grid-cols-3">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Adultos incluidos</label>
-                  <Input name="includedAdults" type="number" min={1} defaultValue={currentPackage?.includedAdults ?? 2} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Menores incluidos</label>
-                  <Input name="includedMinors" type="number" min={0} defaultValue={currentPackage?.includedMinors ?? 0} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Minimo viajeros</label>
-                  <Input name="minTravelers" type="number" min={1} defaultValue={currentPackage?.minTravelers ?? 1} />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-sm font-medium text-slate-700">Nota de reserva</label>
-                <Textarea
-                  name="reservationNote"
-                  rows={3}
-                  defaultValue={currentPackage?.reservationNote ?? ""}
-                  placeholder="Aclara cuándo aplica el precio publicado y cuándo conviene cotizar."
-                />
-              </div>
-
-              <div className="grid gap-3 md:grid-cols-3">
-                <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                  <input type="checkbox" name="directBookable" defaultChecked={currentPackage?.directBookable ?? false} />
-                  Permite reserva inmediata
-                </label>
-                <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                  <input type="checkbox" name="featured" defaultChecked={currentPackage?.featured ?? false} />
-                  Destacado en home
-                </label>
-                <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-700">
-                  <input type="checkbox" name="isActive" defaultChecked={currentPackage ? currentPackage.isActive : true} />
-                  Visible en catalogo
-                </label>
-              </div>
-
-              <Button type="submit" className="w-full">
-                {currentPackage ? "Guardar paquete" : "Crear paquete"}
-              </Button>
-            </form>
+            <AdminPackageForm
+              currentPackageId={currentPackage?.id}
+              values={packageFormValues}
+              destinations={destinations.map((destination) => ({
+                id: destination.id,
+                label: destination.name,
+              }))}
+              hotels={hotels.map((hotel) => ({
+                id: hotel.id,
+                label: `${hotel.name} · ${hotel.destination.name}`,
+              }))}
+              suppliers={suppliers.map((supplier) => ({
+                id: supplier.id,
+                label: `${supplier.displayName ?? supplier.name}${supplier.code ? ` · ${supplier.code}` : ""}`,
+              }))}
+              mealPlans={mealPlans.map((mealPlan) => ({
+                id: mealPlan.id,
+                label: mealPlan.name,
+              }))}
+              roomTypes={roomTypes.map((roomType) => ({
+                id: roomType.id,
+                label: `${roomType.name} · ${roomType.hotel.name}`,
+              }))}
+            />
           </CardContent>
         </Card>
 
