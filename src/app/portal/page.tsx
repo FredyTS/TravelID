@@ -56,7 +56,7 @@ export default async function PortalDashboardPage() {
         </Card>
         <Card className="rounded-[2rem] border-slate-200 bg-white">
           <CardHeader><CardTitle className="text-base">Cotizaciones activas</CardTitle></CardHeader>
-          <CardContent><p className="text-3xl font-semibold">{overview.activeQuote ? 1 : 0}</p></CardContent>
+          <CardContent><p className="text-3xl font-semibold">{overview.quotes.filter((quote) => !quote.convertedOrder).length}</p></CardContent>
         </Card>
       </div>
 
@@ -157,6 +157,34 @@ export default async function PortalDashboardPage() {
         </Card>
 
         <div className="space-y-6">
+          <Card className="rounded-[2rem] border-slate-200 bg-white">
+            <CardHeader className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
+              <CardTitle>Cotizaciones</CardTitle>
+              <Link href="/portal/cotizaciones" className="text-sm font-medium text-primary hover:underline">
+                Ver todas
+              </Link>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {overview.quotes.length > 0 ? (
+                overview.quotes.map((quote) => (
+                  <Link key={quote.id} href={`/portal/cotizaciones/${quote.id}`} className="block rounded-[1.5rem] border border-slate-200 p-4 hover:border-primary">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-medium text-slate-950">{quote.title}</p>
+                      <Badge className="rounded-full bg-sky-100 text-sky-800 hover:bg-sky-100">
+                        {quote.status}
+                      </Badge>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-500">
+                      {quote.quoteNumber} · {formatCurrency(Number(quote.grandTotal))}
+                    </p>
+                  </Link>
+                ))
+              ) : (
+                <p className="text-sm text-slate-600">Todavia no tienes cotizaciones visibles.</p>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="rounded-[2rem] border-slate-200 bg-white">
             <CardHeader className="flex flex-col items-start justify-between gap-3 sm:flex-row sm:items-center">
               <CardTitle>Conversaciones</CardTitle>

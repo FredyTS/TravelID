@@ -27,7 +27,7 @@ export function DashboardShell({
   const activeItem =
     nav.find((item) => pathname === item.href || (item.href !== "/admin" && pathname.startsWith(item.href))) ?? nav[0];
   const mobileNav = nav.slice(0, 5);
-  const shouldRenderBottomNav = nav.length <= 6;
+  const shouldRenderBottomNav = mobileNav.length > 0;
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#f7fafc_0%,#eef4f6_100%)] text-slate-950">

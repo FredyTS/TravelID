@@ -4,6 +4,7 @@ import { getServerAuthSession } from "@/lib/auth/session";
 
 const portalNav = [
   { href: "/portal", label: "Resumen" },
+  { href: "/portal/cotizaciones", label: "Cotizaciones" },
   { href: "/portal/viajes", label: "Viajes" },
   { href: "/portal/inbox", label: "Inbox" },
   { href: "/portal/documentos", label: "Documentos" },

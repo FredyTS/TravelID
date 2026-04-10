@@ -1,4 +1,4 @@
-import { notFound } from "next/navigation";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { requireCustomerSession } from "@/lib/auth/guards";
 import { prisma } from "@/lib/db/prisma";
@@ -19,7 +19,7 @@ export default async function PortalQuoteDetailPage({
   const { quoteId } = await params;
 
   if (!session?.user.customerId) {
-    notFound();
+    redirect(`/acceso?next=${encodeURIComponent(`/portal/cotizaciones/${quoteId}`)}`);
   }
 
   const existingQuote = await prisma.quote.findUnique({
@@ -37,7 +37,7 @@ export default async function PortalQuoteDetailPage({
   });
 
   if (!existingQuote || !canAccessCustomerResource(session.user.customerId, existingQuote.customerId)) {
-    notFound();
+    redirect("/portal/cotizaciones");
   }
 
   await markQuoteViewed({
