@@ -15,6 +15,13 @@ import {
   parsePackageCommercialComponents,
 } from "@/features/catalog/server/package-commercials";
 
+export type SavePackageFormState = {
+  status: "idle" | "success" | "error";
+  message: string;
+  packageId?: string;
+  submittedAt?: number;
+};
+
 function valueOrNull(value: FormDataEntryValue | null) {
   const normalized = String(value ?? "").trim();
   return normalized.length > 0 ? normalized : null;
@@ -322,7 +329,7 @@ export async function toggleHotelActiveAction(formData: FormData) {
   revalidatePath("/admin/packages");
 }
 
-export async function savePackageAction(formData: FormData) {
+async function persistPackage(formData: FormData) {
   const id = valueOrNull(formData.get("id"));
   const name = String(formData.get("name") ?? "").trim();
   const destinationId = String(formData.get("destinationId") ?? "");
@@ -409,6 +416,35 @@ export async function savePackageAction(formData: FormData) {
   revalidatePath("/reservar");
   revalidatePath("/");
   revalidatePath("/promociones");
+
+  return travelPackage;
+}
+
+export async function savePackageFormAction(
+  _previousState: SavePackageFormState,
+  formData: FormData,
+): Promise<SavePackageFormState> {
+  try {
+    const travelPackage = await persistPackage(formData);
+
+    return {
+      status: "success",
+      message: `Paquete "${travelPackage.name}" guardado correctamente.`,
+      packageId: travelPackage.id,
+      submittedAt: Date.now(),
+    };
+  } catch (error) {
+    console.error("savePackageFormAction", error);
+
+    return {
+      status: "error",
+      message:
+        error instanceof Error
+          ? error.message
+          : "No fue posible guardar el paquete. Revisa los datos e intenta nuevamente.",
+      submittedAt: Date.now(),
+    };
+  }
 }
 
 export async function togglePackageFlagAction(formData: FormData) {
