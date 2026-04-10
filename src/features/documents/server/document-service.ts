@@ -3,6 +3,9 @@ import { DocumentType, DocumentVisibility, Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db/prisma";
 import { siteConfig } from "@/config/site";
 import { QuoteProposalData } from "@/features/quotes/server/proposal-template";
+import { getEmailSettings } from "@/features/settings/server/settings-service";
+import { renderTemplate } from "@/features/settings/server/template-engine";
+import { getDefaultSiteTemplateVariables } from "@/features/settings/server/template-settings";
 
 const GENERATED_QUOTE_PROPOSAL_PREFIX = "generated:quote-proposal:";
 
@@ -297,6 +300,32 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
   const boldFont = await pdfDoc.embedFont(StandardFonts.HelveticaBold);
 
   const fonts = { regular: regularFont, bold: boldFont };
+  const settings = await getEmailSettings();
+  const pdfTemplate = settings.templates.quoteProposalPdf;
+  const templateVariables = {
+    ...getDefaultSiteTemplateVariables(),
+    quote_number: quote.quoteNumber,
+    quote_title: quote.title,
+    generated_at: proposal.generatedAt,
+    client_name: proposal.clientName,
+    client_phone: proposal.clientPhone ?? "",
+    destination: proposal.destination,
+    check_in: proposal.checkIn,
+    check_out: proposal.checkOut,
+    nights: String(proposal.nights),
+    adults: String(proposal.adults),
+    minors: String(proposal.minors),
+    minor_ages: proposal.minorAges ?? "",
+    subtotal: formatMoney(quote.subtotal),
+    discount_total: formatMoney(quote.discountTotal),
+    grand_total: formatMoney(quote.grandTotal),
+    deposit_required: formatMoney(quote.depositRequired),
+    balance_due: formatMoney(quote.balanceDue),
+    valid_until: formatDate(quote.validUntil),
+    footer_note:
+      proposal.footerNote ??
+      "*Precio cotizado por el total en moneda mexicana, sujeto a disponibilidad y cambios sin previo aviso.",
+  };
   const theme: PdfTheme = {
     primary: rgb(0.05, 0.52, 0.72),
     primarySoft: rgb(0.92, 0.97, 0.99),
@@ -362,14 +391,14 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
 
   createPage();
 
-  page.drawText(quote.title, {
+  page.drawText(renderTemplate(pdfTemplate.documentTitle, templateVariables), {
     x: margin,
     y,
     size: 24,
     font: boldFont,
     color: theme.slate,
   });
-  page.drawText("Documento comercial para seguimiento, aprobacion y pagos del viaje.", {
+  page.drawText(renderTemplate(pdfTemplate.documentSubtitle, templateVariables), {
     x: margin,
     y: y - 22,
     size: 10,
@@ -384,7 +413,7 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
   y -= 74;
 
   drawRoundedCard(page, margin, y - 104, pageWidth - margin * 2, 104, theme.primarySoft, theme.border);
-  page.drawText("Datos del viaje", {
+  page.drawText(renderTemplate(pdfTemplate.tripSectionTitle, templateVariables), {
     x: margin + 16,
     y: y - 18,
     size: 13,
@@ -442,10 +471,20 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
 
   for (const hotel of proposal.hotels) {
     ensureSpace(198);
+    const hotelTemplateVariables = {
+      ...templateVariables,
+      hotel_name: hotel.name,
+      hotel_code: hotel.code ?? "",
+      hotel_supplier_name: hotel.supplierName ?? "Proveedor por confirmar",
+      hotel_supplier_code: hotel.supplierCode ?? "Sin clave",
+      hotel_room_type: hotel.roomType,
+      hotel_meal_plan: hotel.mealPlan,
+    };
+    void hotelTemplateVariables;
     drawRoundedCard(page, margin, y - 176, pageWidth - margin * 2, 176, theme.white, theme.border);
     drawSectionTitle(
       page,
-      hotel.name,
+      `${renderTemplate(pdfTemplate.hotelsSectionTitle, templateVariables)} · ${hotel.name}`,
       `${hotel.supplierName ?? "Proveedor por confirmar"} · ${hotel.supplierCode ?? "Sin clave"} · ${hotel.roomType} · ${hotel.mealPlan}`,
       margin + 16,
       y - 22,
@@ -539,7 +578,16 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
   if (proposal.flights?.segments?.length) {
     ensureSpace(144 + proposal.flights.segments.length * 40);
     drawRoundedCard(page, margin, y - 124 - proposal.flights.segments.length * 30, pageWidth - margin * 2, 124 + proposal.flights.segments.length * 30, theme.white, theme.border);
-    drawSectionTitle(page, "Vuelos", "Tramos incluidos en la propuesta", margin + 16, y - 22, pageWidth - margin * 2 - 32, fonts, theme);
+    drawSectionTitle(
+      page,
+      renderTemplate(pdfTemplate.flightsSectionTitle, templateVariables),
+      renderTemplate(pdfTemplate.flightsSectionSubtitle, templateVariables),
+      margin + 16,
+      y - 22,
+      pageWidth - margin * 2 - 32,
+      fonts,
+      theme,
+    );
     let flightY = y - 52;
 
     for (const segment of proposal.flights.segments) {
@@ -593,7 +641,16 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
   if (proposal.transfer?.hotels?.length) {
     ensureSpace(132 + proposal.transfer.hotels.length * 20);
     drawRoundedCard(page, margin, y - 96 - proposal.transfer.hotels.length * 20, pageWidth - margin * 2, 96 + proposal.transfer.hotels.length * 20, theme.white, theme.border);
-    drawSectionTitle(page, "Traslados", "Servicio adicional de aeropuerto y hotel", margin + 16, y - 22, pageWidth - margin * 2 - 32, fonts, theme);
+    drawSectionTitle(
+      page,
+      renderTemplate(pdfTemplate.transfersSectionTitle, templateVariables),
+      renderTemplate(pdfTemplate.transfersSectionSubtitle, templateVariables),
+      margin + 16,
+      y - 22,
+      pageWidth - margin * 2 - 32,
+      fonts,
+      theme,
+    );
     page.drawText(`Aeropuerto: ${proposal.transfer.airport}`, {
       x: margin + 16,
       y: y - 46,
@@ -639,7 +696,7 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
 
   ensureSpace(164);
   drawRoundedCard(page, margin, y - 144, pageWidth - margin * 2, 144, theme.slate, theme.slate);
-  page.drawText("Resumen financiero", {
+  page.drawText(renderTemplate(pdfTemplate.financialSummaryTitle, templateVariables), {
     x: margin + 16,
     y: y - 22,
     size: 15,
@@ -673,7 +730,7 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
     totalY -= 18;
   }
 
-  page.drawText("Este documento sirve como referencia comercial para seguimiento y autorizacion.", {
+  page.drawText(renderTemplate(pdfTemplate.financialSummaryNote, templateVariables), {
     x: margin + 16,
     y: y - 132,
     size: 8.5,
@@ -682,9 +739,7 @@ export async function generateQuoteProposalPdfBytes(quote: QuoteWithProposal) {
   });
   y -= 168;
 
-  const footerNote =
-    proposal.footerNote ??
-    "*Precio cotizado por el total en moneda mexicana, sujeto a disponibilidad y cambios sin previo aviso.";
+  const footerNote = renderTemplate(pdfTemplate.footerNote, templateVariables);
   ensureSpace(40);
   drawWrappedText(page, footerNote, {
     x: margin,

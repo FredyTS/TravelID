@@ -41,6 +41,14 @@ function roundCurrency(value: number) {
   return Math.round((value + Number.EPSILON) * 100) / 100;
 }
 
+function formatCurrency(value: number) {
+  return new Intl.NumberFormat("es-MX", {
+    style: "currency",
+    currency: "MXN",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
@@ -244,7 +252,6 @@ export async function createAdminQuote(input: {
   await ensureCustomerPortalAccess(customer.id);
 
   const matchedPackage = input.packageSlug ? await getSalesPackageBySlug(input.packageSlug) : null;
-  const proposalHtml = input.proposalData ? renderQuoteProposalHtml(input.proposalData) : null;
 
   const lineItems =
     input.quoteItems && input.quoteItems.length > 0
@@ -290,10 +297,23 @@ export async function createAdminQuote(input: {
     Math.min(input.depositRequired ?? grandTotal * (depositPercentage / 100), grandTotal),
   );
   const balanceDue = roundCurrency(Math.max(grandTotal - depositRequired, 0));
+  const quoteNumber = generateQuoteNumber();
+  const proposalHtml = input.proposalData
+    ? await renderQuoteProposalHtml(input.proposalData, {
+        quoteNumber,
+        quoteTitle: input.title,
+        subtotal: formatCurrency(subtotal),
+        discountTotal: formatCurrency(discountTotal),
+        grandTotal: formatCurrency(grandTotal),
+        depositRequired: formatCurrency(depositRequired),
+        balanceDue: formatCurrency(balanceDue),
+        validUntil: input.validUntil ? new Date(input.validUntil).toLocaleDateString("es-MX") : "",
+      })
+    : null;
 
   const quote = await prisma.quote.create({
     data: {
-      quoteNumber: generateQuoteNumber(),
+      quoteNumber,
       source: matchedPackage ? QuoteSource.CATALOG : QuoteSource.MANUAL,
       customerId: customer.id,
       packageId: matchedPackage?.id,

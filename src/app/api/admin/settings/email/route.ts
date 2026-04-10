@@ -13,6 +13,35 @@ const emailSettingsSchema = z.object({
   mailchimpTransactionalFromEmail: z.string().email(),
   mailchimpTransactionalFromName: z.string().min(2),
   mailchimpTransactionalWebhookKey: z.string().default(""),
+  templates: z.object({
+    magicLinkEmail: z.object({
+      subject: z.string().min(1),
+      html: z.string().min(1),
+    }),
+    conversationNotificationEmail: z.object({
+      subject: z.string().min(1),
+      html: z.string().min(1),
+    }),
+    portalTrackingEmail: z.object({
+      subject: z.string().min(1),
+      html: z.string().min(1),
+    }),
+    quoteProposalHtmlTemplate: z.string().min(1),
+    quoteProposalPdf: z.object({
+      documentTitle: z.string().min(1),
+      documentSubtitle: z.string().min(1),
+      tripSectionTitle: z.string().min(1),
+      hotelsSectionTitle: z.string().min(1),
+      hotelsSectionSubtitle: z.string().min(1),
+      flightsSectionTitle: z.string().min(1),
+      flightsSectionSubtitle: z.string().min(1),
+      transfersSectionTitle: z.string().min(1),
+      transfersSectionSubtitle: z.string().min(1),
+      financialSummaryTitle: z.string().min(1),
+      financialSummaryNote: z.string().min(1),
+      footerNote: z.string().min(1),
+    }),
+  }),
 });
 
 export async function GET() {

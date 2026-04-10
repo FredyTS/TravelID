@@ -1,7 +1,10 @@
 import { EmailDeliveryStatus, EmailProvider } from "@prisma/client";
 import { Resend } from "resend";
 import { prisma } from "@/lib/db/prisma";
+import type { EmailTemplateConfig } from "@/features/settings/server/settings-service";
 import { getEmailSettings } from "@/features/settings/server/settings-service";
+import { escapeHtml, htmlToPlainText, renderTemplate } from "@/features/settings/server/template-engine";
+import { getDefaultSiteTemplateVariables } from "@/features/settings/server/template-settings";
 
 type EmailTrackingInput = {
   category: string;
@@ -42,6 +45,75 @@ function mapMailchimpStatus(status?: string | null) {
     default:
       return EmailDeliveryStatus.PENDING;
   }
+}
+
+function buildEmailTemplateVariables(input: {
+  subject?: string;
+  greeting?: string;
+  host?: string;
+  intro?: string;
+  preview?: string;
+  ctaLabel?: string;
+  ctaUrl?: string;
+  secondaryCtaLabel?: string;
+  secondaryCtaUrl?: string;
+  primaryButtonColor?: string;
+  secondaryLinkColor?: string;
+}) {
+  const ctaUrl = input.ctaUrl ?? "";
+  const secondaryCtaUrl = input.secondaryCtaUrl ?? "";
+  const ctaLabel = input.ctaLabel ?? "";
+  const secondaryCtaLabel = input.secondaryCtaLabel ?? "";
+
+  return {
+    html: {
+      ...getDefaultSiteTemplateVariables(),
+      subject: escapeHtml(input.subject ?? ""),
+      greeting: escapeHtml(input.greeting ?? ""),
+      host: escapeHtml(input.host ?? ""),
+      intro: escapeHtml(input.intro ?? ""),
+      preview: escapeHtml(input.preview ?? ""),
+      cta_label: escapeHtml(ctaLabel),
+      cta_url: escapeHtml(ctaUrl),
+      cta_button: ctaUrl
+        ? `<a href="${escapeHtml(ctaUrl)}" style="display:inline-block;background:${input.primaryButtonColor ?? "#0284c7"};color:#fff;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:600">${escapeHtml(ctaLabel)}</a>`
+        : "",
+      cta_link: ctaUrl ? `<a href="${escapeHtml(ctaUrl)}">${escapeHtml(ctaUrl)}</a>` : "",
+      secondary_cta_label: escapeHtml(secondaryCtaLabel),
+      secondary_cta_url: escapeHtml(secondaryCtaUrl),
+      secondary_cta_link:
+        secondaryCtaUrl && secondaryCtaLabel
+          ? `<p style="margin:16px 0 0"><a href="${escapeHtml(secondaryCtaUrl)}" style="color:${input.secondaryLinkColor ?? "#0f766e"};text-decoration:none;font-weight:600">${escapeHtml(secondaryCtaLabel)}</a></p>`
+          : "",
+    },
+    text: {
+      ...getDefaultSiteTemplateVariables(),
+      subject: input.subject ?? "",
+      greeting: input.greeting ?? "",
+      host: input.host ?? "",
+      intro: input.intro ?? "",
+      preview: input.preview ?? "",
+      cta_label: ctaLabel,
+      cta_url: ctaUrl,
+      cta_button: ctaUrl,
+      cta_link: ctaUrl,
+      secondary_cta_label: secondaryCtaLabel,
+      secondary_cta_url: secondaryCtaUrl,
+      secondary_cta_link: secondaryCtaUrl,
+    },
+  };
+}
+
+function renderConfiguredEmailTemplate(template: EmailTemplateConfig, variables: ReturnType<typeof buildEmailTemplateVariables>) {
+  const subject = renderTemplate(template.subject, variables.text).trim();
+  const html = renderTemplate(template.html, variables.html).trim();
+  const text = htmlToPlainText(html);
+
+  return {
+    subject,
+    html,
+    text,
+  };
 }
 
 async function createEmailLog(input: SendEmailInput, provider: EmailProvider) {
@@ -152,7 +224,7 @@ export async function sendTransactionalEmail(input: SendEmailInput) {
       await prisma.emailDeliveryLog.update({
         where: { id: emailLog.id },
         data: {
-        provider: provider === EmailProvider.RESEND && !resend ? EmailProvider.CONSOLE : provider,
+          provider: provider === EmailProvider.RESEND && !resend ? EmailProvider.CONSOLE : provider,
           status: EmailDeliveryStatus.SENT,
           sentAt: new Date(),
           lastEventAt: new Date(),
@@ -202,23 +274,22 @@ export async function sendMagicLinkEmail(input: {
   url: string;
   host: string;
 }) {
+  const settings = await getEmailSettings();
+  const variables = buildEmailTemplateVariables({
+    subject: "Tu acceso a tu portal",
+    greeting: "Hola,",
+    host: input.host,
+    ctaLabel: "Entrar a mi portal",
+    ctaUrl: input.url,
+    primaryButtonColor: "#0f766e",
+  });
+  const email = renderConfiguredEmailTemplate(settings.templates.magicLinkEmail, variables);
+
   return sendTransactionalEmail({
     to: input.email,
-    subject: "Tu acceso a Alondra Travel MX",
-    text: `Tu cuenta ya esta lista. Abre este enlace para entrar a tu portal: ${input.url}`,
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
-        <h2>Tu portal de viaje esta listo</h2>
-        <p>Haz clic en el siguiente boton para entrar a tu cuenta en ${input.host}.</p>
-        <p style="margin:24px 0">
-          <a href="${input.url}" style="background:#0f766e;color:#fff;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:600">
-            Entrar a mi portal
-          </a>
-        </p>
-        <p>Si el boton no abre, usa este enlace:</p>
-        <p><a href="${input.url}">${input.url}</a></p>
-      </div>
-    `,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
     tracking: {
       category: "MAGIC_LINK",
       metadata: {
@@ -238,24 +309,22 @@ export async function sendConversationNotificationEmail(input: {
   tracking?: EmailTrackingInput;
 }) {
   const greeting = input.recipientName ? `Hola ${input.recipientName},` : "Hola,";
+  const settings = await getEmailSettings();
+  const variables = buildEmailTemplateVariables({
+    subject: input.subject,
+    greeting,
+    preview: input.preview,
+    ctaLabel: input.ctaLabel,
+    ctaUrl: input.ctaUrl,
+    primaryButtonColor: "#1d4ed8",
+  });
+  const email = renderConfiguredEmailTemplate(settings.templates.conversationNotificationEmail, variables);
 
   return sendTransactionalEmail({
     to: input.email,
-    subject: input.subject,
-    text: `${greeting}\n\n${input.preview}\n\nRevisa el mensaje aqui: ${input.ctaUrl}`,
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a">
-        <p>${greeting}</p>
-        <p>${input.preview}</p>
-        <p style="margin:24px 0">
-          <a href="${input.ctaUrl}" style="background:#1d4ed8;color:#fff;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:600">
-            ${input.ctaLabel}
-          </a>
-        </p>
-        <p>Si el boton no abre, entra aqui:</p>
-        <p><a href="${input.ctaUrl}">${input.ctaUrl}</a></p>
-      </div>
-    `,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
     tracking: {
       category: "CONVERSATION_NOTIFICATION",
       ...input.tracking,
@@ -275,42 +344,25 @@ export async function sendPortalTrackingEmail(input: {
   tracking?: EmailTrackingInput;
 }) {
   const greeting = input.recipientName ? `Hola ${input.recipientName},` : "Hola,";
-
-  const secondaryBlock =
-    input.secondaryUrl && input.secondaryLabel
-      ? `
-        <p style="margin:16px 0 0">
-          <a href="${input.secondaryUrl}" style="color:#0f766e;text-decoration:none;font-weight:600">
-            ${input.secondaryLabel}
-          </a>
-        </p>
-      `
-      : "";
+  const settings = await getEmailSettings();
+  const variables = buildEmailTemplateVariables({
+    subject: input.subject,
+    greeting,
+    intro: input.intro,
+    ctaLabel: input.ctaLabel,
+    ctaUrl: input.ctaUrl,
+    secondaryCtaLabel: input.secondaryLabel,
+    secondaryCtaUrl: input.secondaryUrl,
+    primaryButtonColor: "#0284c7",
+    secondaryLinkColor: "#0f766e",
+  });
+  const email = renderConfiguredEmailTemplate(settings.templates.portalTrackingEmail, variables);
 
   return sendTransactionalEmail({
     to: input.email,
-    subject: input.subject,
-    text: `${greeting}\n\n${input.intro}\n\nAbre aqui: ${input.ctaUrl}${input.secondaryUrl ? `\n\nPortal: ${input.secondaryUrl}` : ""}`,
-    html: `
-      <div style="font-family:Arial,sans-serif;line-height:1.6;color:#0f172a;max-width:640px;margin:0 auto">
-        <div style="padding:24px 0 12px">
-          <p style="margin:0;font-size:14px;color:#0f766e;font-weight:700;letter-spacing:0.12em;text-transform:uppercase">Alondra Travel MX</p>
-          <h2 style="margin:12px 0 0;font-size:28px;line-height:1.2;color:#0f172a">Seguimiento de tu viaje</h2>
-        </div>
-        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:24px;padding:24px">
-          <p>${greeting}</p>
-          <p>${input.intro}</p>
-          <p style="margin:24px 0">
-            <a href="${input.ctaUrl}" style="display:inline-block;background:#0284c7;color:#fff;padding:12px 18px;border-radius:999px;text-decoration:none;font-weight:600">
-              ${input.ctaLabel}
-            </a>
-          </p>
-          ${secondaryBlock}
-          <p style="margin-top:20px;color:#475569;font-size:14px">Si el botón no abre, copia este enlace:</p>
-          <p style="word-break:break-word"><a href="${input.ctaUrl}">${input.ctaUrl}</a></p>
-        </div>
-      </div>
-    `,
+    subject: email.subject,
+    text: email.text,
+    html: email.html,
     tracking: {
       category: "PORTAL_TRACKING",
       ...input.tracking,
