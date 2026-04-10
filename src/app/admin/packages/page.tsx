@@ -47,6 +47,7 @@ export default async function AdminPackagesPage({
     getHotelRoomTypeOptions(),
     editId ? getAdminPackageById(editId) : Promise.resolve(null),
   ]);
+  const formKey = currentPackage?.id ?? "new-package";
 
   return (
     <div className="space-y-8">
@@ -76,8 +77,8 @@ export default async function AdminPackagesPage({
             ) : null}
           </CardHeader>
           <CardContent>
-            <form action={savePackageAction} className="grid gap-4">
-              <input type="hidden" name="id" defaultValue={currentPackage?.id} />
+            <form key={formKey} action={savePackageAction} className="grid gap-4">
+              <input type="hidden" name="id" defaultValue={currentPackage?.id ?? ""} />
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
                   <label className="text-sm font-medium text-slate-700">Nombre</label>
@@ -266,6 +267,7 @@ export default async function AdminPackagesPage({
               </div>
 
               <PackagePricingEditor
+                key={`pricing-editor-${formKey}`}
                 initialValue={currentPackage?.components.map((component) => {
                   const metadata =
                     component.metadata && typeof component.metadata === "object" && !Array.isArray(component.metadata)
