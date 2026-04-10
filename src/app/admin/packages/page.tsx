@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { TravelType } from "@prisma/client";
 import { savePackageAction, togglePackageFlagAction } from "@/features/catalog/server/admin-catalog-actions";
+import { PackagePricingEditor } from "@/features/catalog/components/package-pricing-editor";
 import {
   getAdminCatalogOverview,
   getAdminPackageById,
@@ -251,15 +252,45 @@ export default async function AdminPackagesPage({
                   <Input name="durationNights" type="number" min={1} defaultValue={currentPackage?.durationNights ?? 4} />
                 </div>
                 <div className="space-y-2">
-                  <label className="text-sm font-medium text-slate-700">Precio desde</label>
+                  <label className="text-sm font-medium text-slate-700">Precio manual de referencia</label>
                   <Input
                     name="basePriceFrom"
                     type="number"
                     min={0}
                     defaultValue={Number(currentPackage?.basePriceFrom ?? 0)}
                   />
+                  <p className="text-xs text-slate-500">
+                    Si capturas cargos abajo, este valor se recalcula automaticamente con la composicion comercial.
+                  </p>
                 </div>
               </div>
+
+              <PackagePricingEditor
+                initialValue={currentPackage?.components.map((component) => {
+                  const metadata =
+                    component.metadata && typeof component.metadata === "object" && !Array.isArray(component.metadata)
+                      ? (component.metadata as Record<string, unknown>)
+                      : {};
+
+                  return {
+                    type: component.type,
+                    title: component.title,
+                    description: component.description ?? "",
+                    quantity: Number(metadata.quantity ?? 1),
+                    unitPrice: Number(metadata.unitPrice ?? 0),
+                    currency: String(metadata.currency ?? "MXN"),
+                    isIncluded: component.isIncluded,
+                    supplierId: component.supplierId ?? "",
+                    hotelId: component.hotelId ?? "",
+                    roomTypeId: component.roomTypeId ?? "",
+                    mealPlanId: component.mealPlanId ?? "",
+                    originCity: component.originCity ?? "",
+                    destinationCity: component.destinationCity ?? "",
+                    pricingReference: component.pricingReference ?? "",
+                    notes: String(metadata.notes ?? ""),
+                  };
+                })}
+              />
 
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="space-y-2">

@@ -11,11 +11,22 @@ export function DirectReservationForm({
   includedTravelers,
   departureCity,
   packageSlug,
+  priceFrom,
+  breakdown,
 }: {
   packageName: string;
   includedTravelers: string;
   departureCity: string;
   packageSlug: string;
+  priceFrom: number;
+  breakdown: Array<{
+    type: string;
+    title: string;
+    description: string | null;
+    quantity: number;
+    unitPrice: number;
+    lineTotal: number;
+  }>;
 }) {
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -51,13 +62,36 @@ export function DirectReservationForm({
         <Input defaultValue={packageName} readOnly />
       </div>
       <div className="space-y-2">
+        <label className="text-sm font-medium text-slate-700">Precio final publicado</label>
+        <Input defaultValue={`$${priceFrom.toLocaleString("es-MX")} MXN`} readOnly />
+      </div>
+      <div className="space-y-2">
         <label className="text-sm font-medium text-slate-700">Precio publicado para</label>
         <Input defaultValue={includedTravelers} readOnly />
       </div>
-      <div className="space-y-2">
+      <div className="space-y-2 md:col-span-2">
         <label className="text-sm font-medium text-slate-700">Ciudad de salida incluida en el precio</label>
         <Input defaultValue={departureCity} readOnly />
       </div>
+      {breakdown.length > 0 ? (
+        <div className="space-y-3 md:col-span-2">
+          <p className="text-sm font-medium text-slate-700">Desglose que se apartara</p>
+          <div className="space-y-2 rounded-3xl border border-slate-200 bg-slate-50 p-4">
+            {breakdown.map((item) => (
+              <div key={`${item.type}-${item.title}-${item.lineTotal}`} className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-medium text-slate-950">{item.title}</p>
+                  {item.description ? <p className="text-sm text-slate-600">{item.description}</p> : null}
+                </div>
+                <div className="text-right text-sm text-slate-600">
+                  <p>{item.quantity} x ${item.unitPrice.toLocaleString("es-MX")} MXN</p>
+                  <p className="font-semibold text-slate-950">${item.lineTotal.toLocaleString("es-MX")} MXN</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      ) : null}
       <div className="space-y-2 md:col-span-2">
         <label htmlFor="reservation-name" className="text-sm font-medium text-slate-700">
           Nombre completo del titular

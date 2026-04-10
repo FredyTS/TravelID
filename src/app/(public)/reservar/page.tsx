@@ -29,6 +29,8 @@ export default async function ReservePage({
                 includedTravelers={currentPackage.includedTravelers}
                 departureCity={currentPackage.departureCity}
                 packageSlug={currentPackage.slug}
+                priceFrom={currentPackage.priceFrom}
+                breakdown={currentPackage.includedPriceBreakdown}
               />
             ) : (
               <p className="text-sm text-slate-600">
